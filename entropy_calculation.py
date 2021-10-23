@@ -21,9 +21,7 @@ def ent_samp(buf):
             f /= len(buf)
             entropy += f * log2(f)
 
-    if entropy != 0.0:
-        entropy = -entropy
-    entropy /= 8
+    entropy = abs(entropy) / 8
 
     return entropy
 
