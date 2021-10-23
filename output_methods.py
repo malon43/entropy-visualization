@@ -22,7 +22,8 @@ class SampleOutput:
     }
 
     def __init__(self, **kwargs):
-        for key, value in (SampleOutput.default_parameters | kwargs).items():
+        # in python 3.9+: (SampleOutput.default_parameters | kwargs).items()
+        for key, value in dict(SampleOutput.default_parameters, **kwargs).items():
             if key in SampleOutput.default_parameters:
                 setattr(self, key, value)
 
@@ -53,7 +54,7 @@ class CSVOutput:
     }
 
     def __init__(self, **kwargs):
-        for key, value in (SampleOutput.default_parameters | kwargs).items():
+        for key, value in dict(SampleOutput.default_parameters, **kwargs).items():
             if key in SampleOutput.default_parameters:
                 setattr(self, key, value)
         print("SECTOR_NUM,SECTOR_OFFSET,SECTOR_ENTROPY,PATTERN")
