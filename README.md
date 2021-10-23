@@ -5,4 +5,3 @@
 - Description
 - Usage
 - Better Project Structure
-- Command line parsing
