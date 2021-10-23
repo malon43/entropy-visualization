@@ -11,7 +11,8 @@ DEFAULT_OUTPUT_METHOD = 'sample-output'
 
 def main(args):
     with args.file as f:
-        iterate(f, args.size, args.output_method(entropy_threshold=0.9))
+        # TODO parse this as parameter
+        iterate(f, args.size, args.output_method(entropy_threshold=1))
 
 
 def pattern_recognition(buf):
@@ -38,7 +39,8 @@ def iterate(file, sector_size, output):
         buf = file.read(sector_size)
     if len(buf) != 0:
         output.error(
-            f"The size of provided image was not a multiple of {sector_size}")
+            f"The size of provided image was not a multiple of {sector_size}"
+        )
         exit(1)
 
 
@@ -46,14 +48,16 @@ def sector_size_type(x):
     val = int(x)
     if val == 0 or val & (val - 1) != 0:
         raise argparse.ArgumentTypeError(
-            f"{val} is not a power of two")
+            f"{val} is not a power of two"
+        )
     return val
 
 
 def output_method_type(x):
     if x not in output_methods:
         raise argparse.ArgumentTypeError(
-            f"{x} is not a valid output_method")
+            f"{x} is not a valid output_method"
+        )
     return output_methods[x]
 
 
@@ -68,13 +72,15 @@ if __name__ == '__main__':
         "-s", "--size",
         help=f"Set the sector size (default: {DEFAULT_SECTOR_SIZE})",
         type=sector_size_type,
-        default=DEFAULT_SECTOR_SIZE)
+        default=DEFAULT_SECTOR_SIZE
+    )
     parser.add_argument(
         "-m", "--method",
         help=f"Set the output method (available: {', '.join(output_methods.keys())}) (default: {DEFAULT_OUTPUT_METHOD})",
         type=output_method_type,
         default=DEFAULT_OUTPUT_METHOD,
-        dest='output_method')
+        dest='output_method'
+    )
 
     args = parser.parse_args()
     main(args)

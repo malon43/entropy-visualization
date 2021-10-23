@@ -5,3 +5,4 @@
 - Description
 - Usage
 - Better Project Structure
+- Parse entropy threshold as arguments

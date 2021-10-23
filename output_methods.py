@@ -26,16 +26,19 @@ class SampleOutput:
             if key in SampleOutput.default_parameters:
                 setattr(self, key, value)
 
-    def output(self,
-               sector_number,
-               sector_offset,
-               sector_entropy,
-               sector_pattern):
+    def output(
+        self,
+        sector_number,
+        sector_offset,
+        sector_entropy,
+        sector_pattern
+    ):
         if self.entropy_threshold > sector_entropy:
             print(
                 f"{sector_number} (0x{sector_offset:x}) - {sector_entropy:.4f}" +
                 (f" (pattern of 0x{sector_pattern:02x})" if sector_pattern is not None else ""),
-                file=self.output_file)
+                file=self.output_file
+            )
 
     def error(self, message):
         print(message, file=self.err_file)
@@ -59,7 +62,8 @@ class CSVOutput:
         if self.entropy_threshold > args[2]:
             print(
                 ','.join('' if x is None else str(x) for x in args),
-                file=self.output_file)
+                file=self.output_file
+            )
 
     def error(self, message):
         print(message, file=self.err_file)
