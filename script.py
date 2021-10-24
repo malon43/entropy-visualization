@@ -7,7 +7,6 @@ from argument_parsing import parse_arguments
 
 def main(args, output_args):
     with args.file as f:
-        # TODO parse this as parameter
         iterate(f, args.size, args.output_method(**vars(output_args)))
 
 
