@@ -21,4 +21,3 @@ omits every sector the entropy of which is higher or equal to 0.9
 - Description
 - Usage
 - Better Project Structure
-- Parse entropy threshold as arguments
