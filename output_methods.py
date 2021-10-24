@@ -50,19 +50,22 @@ class CSVOutput:
     default_parameters = {
         "output_file": stdout,
         "err_file": stderr,
-        "entropy_threshold": 1.0
+        "entropy_threshold": 1.0,
+        "no_header": False,
+        "separator": ","
     }
 
     def __init__(self, **kwargs):
-        for key, value in dict(SampleOutput.default_parameters, **kwargs).items():
-            if key in SampleOutput.default_parameters:
+        for key, value in dict(CSVOutput.default_parameters, **kwargs).items():
+            if key in CSVOutput.default_parameters:
                 setattr(self, key, value)
-        print("SECTOR_NUM,SECTOR_OFFSET,SECTOR_ENTROPY,PATTERN")
+        if not self.no_header:
+            print("SECTOR_NUM,SECTOR_OFFSET,SECTOR_ENTROPY,PATTERN")
 
     def output(self, *args):
         if self.entropy_threshold > args[2]:
             print(
-                ','.join('' if x is None else str(x) for x in args),
+                self.separator.join('' if x is None else str(x) for x in args),
                 file=self.output_file
             )
 
