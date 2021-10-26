@@ -1,6 +1,5 @@
 import argparse
 from output_methods import output_methods
-from sys import stdout
 
 DEFAULT_SECTOR_SIZE = 512
 DEFAULT_OUTPUT_METHOD = 'sample-output'
