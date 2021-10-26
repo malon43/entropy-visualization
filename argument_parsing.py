@@ -1,6 +1,6 @@
 import argparse
 from output_methods import output_methods
-
+from sys import stdout
 
 DEFAULT_SECTOR_SIZE = 512
 DEFAULT_OUTPUT_METHOD = 'sample-output'
@@ -25,7 +25,8 @@ def output_method_type(x):
 
 def parse_arguments():
     main_parser = argparse.ArgumentParser(
-        usage='%(prog)s [-h] [-s SIZE] [-m OUTPUT_METHOD] [output method arguments] file')
+        usage='%(prog)s [-h] [-s SIZE] [-m OUTPUT_METHOD] [output method arguments] file'
+    )
     main_parser.add_argument(
         "-s", "--size",
         help=f"Set the sector size (default: {DEFAULT_SECTOR_SIZE})",
@@ -49,19 +50,21 @@ def parse_arguments():
     )
 
     for argument, value in main_args.output_method.default_parameters.items():
-        if isinstance(value, bool):
+        if value.type == bool:
             second_parser.add_argument(
                 f"--{argument.replace('_', '-')}",
-                action="store_true",
+                help=value.help_,
+                action="store_false" if value.default_value else "store_true",
                 dest=argument
             )
             continue
         second_parser.add_argument(
             f"--{argument.replace('_', '-')}",
-            help=f"(default: {value})",
-            type=type(value),
-            default=value,
-            dest=argument
+            help=f"{value.help_} (default: {value.default_value})",
+            type=value.type,
+            default=value.default_value,
+            dest=argument,
+            required=value.default_value is None
         )
     output_args = second_parser.parse_args(rest)
     main_args.file = output_args.file
