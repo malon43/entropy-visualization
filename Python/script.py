@@ -10,13 +10,13 @@ def main(args, output_args):
         iterate(f, args.size, args.output_method(**vars(output_args)))
 
 
-def pattern_recognition(buf):
-    """If every byte is the same,
-    returns pattern, otherwise returns None
-    """
-    if all(byte == buf[0] for byte in buf):
-        return buf[0]
-    return None
+# def pattern_recognition(buf):
+#     """If every byte is the same,
+#     returns pattern, otherwise returns None
+#     """
+#     if all(byte == buf[0] for byte in buf):
+#         return buf[0]
+#     return None
 
 
 def iterate(file, sector_size, output):
@@ -26,8 +26,7 @@ def iterate(file, sector_size, output):
         output.output(
             sector_number,
             sector_number * sector_size,
-            ent_samp(buf),
-            pattern_recognition(buf)
+            *ent_samp(buf)
         )
 
         sector_number += 1
