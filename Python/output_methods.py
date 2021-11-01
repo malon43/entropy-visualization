@@ -15,7 +15,7 @@ def output_method_class(argument_name):
     return decorator
 
 
-def entropy_threshold_type(x):
+def entropy_limit_type(x):
     val = float(x)
     if val < 0 or val > 1:
         raise ArgumentTypeError(
@@ -35,8 +35,8 @@ class SampleOutput:
     default_parameters = {
         "output_file": Parameter(FileType('w'), stdout, 'output file'),
         "err_file": Parameter(FileType('w'), stderr, 'error output file'),
-        "entropy_threshold": Parameter(
-            entropy_threshold_type, 1.0,
+        "entropy_limit": Parameter(
+            entropy_limit_type, 1.0,
             'omits every sector the entropy of which is higher than the provided value'
         )
     }
@@ -53,7 +53,7 @@ class SampleOutput:
         sector_entropy,
         sector_pattern
     ):
-        if self.entropy_threshold >= sector_entropy:
+        if self.entropy_limit >= sector_entropy:
             print(
                 f"{sector_number} (0x{sector_offset:x}) - {sector_entropy:.4f}" +
                 (f" (pattern of 0x{sector_pattern:02x})" if sector_pattern is not None else ""),
@@ -69,8 +69,8 @@ class CSVOutput:
     default_parameters = {
         "output_file": Parameter(FileType("w"), stdout, "output file"),
         "err_file": Parameter(FileType("w"), stderr, "error output file"),
-        "entropy_threshold": Parameter(
-            entropy_threshold_type, 1.0,
+        "entropy_limit": Parameter(
+            entropy_limit_type, 1.0,
             "omits every sector the entropy of which is higher than the provided value"
         ),
         "no_header": Parameter(bool, False, "the resulting csv file will not contain a header"),
@@ -85,7 +85,7 @@ class CSVOutput:
             print("SECTOR_NUM,SECTOR_OFFSET,SECTOR_ENTROPY,PATTERN")
 
     def output(self, *args):
-        if self.entropy_threshold >= args[2]:
+        if self.entropy_limit >= args[2]:
             print(
                 self.separator.join('' if x is None else str(x) for x in args),
                 file=self.output_file
