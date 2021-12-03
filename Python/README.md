@@ -30,6 +30,6 @@ omits every sector the entropy of which is higher than 0.9
 
 `--separator '|'` will set | as a seperator of the csv file
 ## TODO
-- Description
+- More descriptive description
 - Usage
 - Better Project Structure
