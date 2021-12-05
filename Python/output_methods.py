@@ -82,7 +82,7 @@ class CSVOutput:
             if key in CSVOutput.default_parameters:
                 setattr(self, key, value)
         if not self.no_header:
-            print("SECTOR_NUM,SECTOR_OFFSET,SECTOR_ENTROPY,PATTERN")
+            print("SECTOR_NUM,SECTOR_OFFSET,SECTOR_ENTROPY,PATTERN", file=self.output_file)
 
     def output(self, *args):
         if self.entropy_limit >= args[2]:
