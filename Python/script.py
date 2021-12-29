@@ -3,11 +3,13 @@
 from entropy_calculation import ent_samp
 from sys import exit
 from argument_parsing import parse_arguments
+from mmap import mmap, ACCESS_READ
 
 
 def main(args, output_args):
     with args.file as f, args.output_method(**vars(output_args)) as output:
-        iterate(f, args.size, output)
+        with mmap(f.fileno(), length=0, access=ACCESS_READ) as file:
+            iterate(file, args.size, output)
 
 
 def iterate(file, sector_size, output):
