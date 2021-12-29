@@ -37,3 +37,4 @@ omits every sector the entropy of which is higher than 0.9
 - scanning image output
 - blocks image output
 - hilbert curve image output
+- speed up entropy calculation
