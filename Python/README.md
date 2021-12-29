@@ -28,8 +28,12 @@ omits every sector the entropy of which is higher than 0.9
 
 `--no-header` the resulting csv file will not contain a header
 
-`--separator '|'` will set | as a seperator of the csv file
+`--separator '|'` will set | as a separator of the csv file
 ## TODO
 - More descriptive description
 - Usage
-- Better Project Structure
+- Better project structure
+- Image output
+- scanning image output
+- blocks image output
+- hilbert curve image output
