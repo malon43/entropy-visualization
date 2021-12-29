@@ -6,19 +6,21 @@ from argument_parsing import parse_arguments
 
 
 def main(args, output_args):
-    with args.file as f:
-        iterate(f, args.size, args.output_method(**vars(output_args)))
+    with args.file as f, args.output_method(**vars(output_args)) as output:
+        iterate(f, args.size, output)
 
 
 def iterate(file, sector_size, output):
     sector_number = 0
     buf = file.read(sector_size)
     while len(buf) == sector_size:
-        output.output(
+        ret = output.output(
             sector_number,
             sector_number * sector_size,
             *ent_samp(buf)
         )
+        if not ret:  # the pipe was closed
+            exit(0)
 
         sector_number += 1
         buf = file.read(sector_size)
