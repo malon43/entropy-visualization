@@ -45,7 +45,7 @@ def parse_arguments():
     second_parser.add_argument(
         "file",
         type=argparse.FileType("rb"),
-        help="Disk iamge to analyze"
+        help="Disk image to analyze"
     )
 
     for argument, value in main_args.output_method.default_parameters.items():
