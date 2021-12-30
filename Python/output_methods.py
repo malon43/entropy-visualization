@@ -1,7 +1,8 @@
 from sys import stdout, stderr
-from errno import EPIPE
 from typing import NamedTuple, Any
 from argparse import FileType, ArgumentTypeError
+from PIL import Image
+from math import ceil
 
 output_methods: dict = {}
 
@@ -29,15 +30,12 @@ def entropy_limit_type(x):
 
 
 def print_check_closed_pipe(*args, **kwargs):
-    """Returns False when pipe is closed, 
-       when other IO error occurs, lets it through,
-       and otherwise returns True"""
+    """Returns False on BrokenPipeError,
+       otherwise lets error through or returns True"""
     try:
         print(*args, **kwargs)
         return True
-    except IOError as e:
-        if e.errno != EPIPE:
-            raise
+    except BrokenPipeError:
         return False
 
 
@@ -50,7 +48,8 @@ class Parameter(NamedTuple):
 class OutputMethodBase:
     default_parameters = dict()
 
-    def __init__(self, **kwargs):
+    def __init__(self, input_size, **kwargs):
+        self._input_size = input_size
         for key, value in {**{k: v.default_value for k, v in self.default_parameters.items()},
                            **kwargs}.items():
             if key in self.default_parameters:
@@ -127,8 +126,8 @@ class CSVOutput(TextLineOutput):
         "separator": Parameter(str, ",", "sets the provided string as a separator of the csv file")
     }
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, input_size, **kwargs):
+        super().__init__(input_size, **kwargs)
 
         if not self.no_header:
             print_check_closed_pipe(
@@ -138,3 +137,76 @@ class CSVOutput(TextLineOutput):
 
     def _get_line(self, *args):
         return self.separator.join('' if x is None else str(x) for x in args)
+
+
+class ImageOutput(OutputMethodBase):
+    default_parameters = {
+        "output_file": Parameter(FileType('wb'), stdout, 'output file'),
+        "err_file": Parameter(FileType('w'), stderr, 'error output file')
+    }
+
+    def __init__(self, input_size, **kwargs):
+        super().__init__(input_size, **kwargs)
+
+        self._image = Image.new('RGB', self._get_size(), (255, 255, 255))
+
+    def output(
+        self,
+        sector_number,
+        sector_offset,
+        sector_entropy,
+        sector_pattern
+    ):
+        # self._image.putpixel(self._next_pos(), self.palette.get())  # TODO
+        if sector_pattern == 0:
+            self._image.putpixel(self._next_pos(), (0, 0, 255))
+        elif sector_pattern is not None:
+            self._image.putpixel(self._next_pos(), (255, 0, 0))
+        else:
+            self._image.putpixel(self._next_pos(),
+                                 (int(255 * sector_entropy), 0, int(255 * sector_entropy)))
+        return True
+
+    def _next_pos(self):
+        raise NotImplementedError(
+            f"Children of {self.__class__.__name__} need to implement the _get_line() method"
+        )
+
+    def _get_size(self):
+        raise NotImplementedError(
+            f"Children of {self.__class__.__name__} need to implement the _get_line() method"
+        )
+
+    def error(self, message):
+        return print_check_closed_pipe(message, file=self.err_file)
+
+    def exit(self):
+        self._image.save(self.output_file, "PNG")  # TODO
+        self.output_file.close()
+        self.err_file.close()
+
+
+@output_method_class('scanning')
+class Scanning(ImageOutput):
+    default_parameters = {
+        **ImageOutput.default_parameters,
+        "width": Parameter(int, 1024, "the width of the resulting image in pixels")
+    }
+
+    def __init__(self, input_size, **kwargs):
+        super().__init__(input_size, **kwargs)
+        self._x = 0
+        self._y = 0
+
+    def _get_size(self):
+        return self.width, ceil(self._input_size / self.width)
+
+    def _next_pos(self):
+        out = (self._x, self._y)
+        self._x += 1
+
+        if self._x >= self.width:
+            self._x = 0
+            self._y += 1
+
+        return out
