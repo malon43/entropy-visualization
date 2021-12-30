@@ -161,7 +161,8 @@ class ImageOutput(OutputMethodBase):
         if sector_pattern == 0:
             self._image.putpixel(self._next_pos(), (0, 0, 255))
         elif sector_pattern is not None:
-            self._image.putpixel(self._next_pos(), (255, 0, 0))
+            self._image.putpixel(
+                self._next_pos(), (0, int(255) * sector_pattern, 0))
         else:
             self._image.putpixel(self._next_pos(),
                                  (int(255 * sector_entropy), 0, int(255 * sector_entropy)))
@@ -186,27 +187,41 @@ class ImageOutput(OutputMethodBase):
         self.err_file.close()
 
 
+@output_method_class('scan-blocks')
+class ScanBlocks(ImageOutput):
+    default_parameters = {
+        **ImageOutput.default_parameters,
+        "width": Parameter(int, 1024, "the width of resulting image in pixels"),
+        "scan_block_size": Parameter(int, 32, "the size of block groups of the resulting image")
+    }
+
+    def __init__(self, input_size, **kwargs):
+        super().__init__(input_size, **kwargs)
+
+        if self.width % self.scan_block_size != 0:
+            raise ValueError("width needs to be a multiple of scan-block-size")
+
+        self._position = 0
+
+    def _get_size(self):
+        return self.width, ceil(self._input_size / (self.scan_block_size * self.width)) * self.scan_block_size
+
+    def _next_pos(self):
+        out = ((self._position % self.scan_block_size +
+               (self._position // self.scan_block_size ** 2) * self.scan_block_size) % self.width,
+               (self._position // self.scan_block_size) % self.scan_block_size + self._position //
+               (self.scan_block_size * self.width) * self.scan_block_size)
+        self._position += 1
+        return out
+
+
 @output_method_class('scanning')
-class Scanning(ImageOutput):
+class Scanning(ScanBlocks):
     default_parameters = {
         **ImageOutput.default_parameters,
         "width": Parameter(int, 1024, "the width of the resulting image in pixels")
     }
 
     def __init__(self, input_size, **kwargs):
+        self.scan_block_size = 1
         super().__init__(input_size, **kwargs)
-        self._x = 0
-        self._y = 0
-
-    def _get_size(self):
-        return self.width, ceil(self._input_size / self.width)
-
-    def _next_pos(self):
-        out = (self._x, self._y)
-        self._x += 1
-
-        if self._x >= self.width:
-            self._x = 0
-            self._y += 1
-
-        return out
