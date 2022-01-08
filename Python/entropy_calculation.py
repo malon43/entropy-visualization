@@ -1,40 +1,66 @@
 from math import log2
+from collections import Counter
+from random import sample
 
 
-def ent_samp(buf):
-    """ Calculates and returns sample entropy on byte level for
+class ShannonsEntropy:
+    def __init__(self, sector_size):
+        self.sector_size = sector_size
+    
+    def calc_ent(self, buf):
+        """ Calculates and returns sample entropy on byte level for
         the argument and single byte pattern if present or None.
 
         This code has been adapted from 
         https://gitlab.com/cryptsetup/cryptsetup/-/blob/master/misc/keyslot_checker/chk_luks_keyslots.c#L81
-    """
-    if len(buf) == 0:
-        return 0.0, None
+        """
+        if len(buf) != self.sector_size:
+            raise ValueError("Invalid buf size")
 
-    freq = [0] * 256
-    for byte in buf:
-        freq[byte] += 1
+        freq = Counter(buf)
+        if len(freq) == 1:
+            return 0.0, freq.popitem()[0]
+        
+        entropy = 0.0
+        for f in freq.values():
+            if f > 0:
+                f /= self.sector_size
+                entropy += f * log2(f)
 
-    entropy = 0.0
-    for byte_value, f in enumerate(freq):
-        if f == len(buf):
-            return 0.0, byte_value
-        if f > 0:
-            f /= len(buf)
-            entropy += f * log2(f)
+        normalized_entropy = abs(entropy) / 8
 
-    entropy = abs(entropy) / 8
+        return normalized_entropy, None
+        
 
-    return entropy, None
+class ChiSquare:
+    BYTES_TO_CHECK = 64
+    EXPECTED_BITS = BYTES_TO_CHECK * 4
+
+    def __init__(self, sector_size):
+        self.sector_size = sector_size
+        
+        # randomly generated positions of checked bytes
+        self._positions = sample(range(sector_size), self.BYTES_TO_CHECK)
+        
+        # Table to look up the bit counts of byte values
+        self._bit_table = [0] * 256
+        
+        # Initialize the _bit_table
+        for i in range(256):
+            self._bit_table[i] = self._bit_table[i // 2] + (i & 1)
 
 
-# from random import randint
-
-
-# test1 = bytes([0] * 512)
-# test2 = bytes([1] * 512)
-# test3 = bytes([*range(256)] * 2)
-# test4 = bytes([randint(0, 255) for _ in range(512)])
-# test5 = bytes([0, 1] * 256)
-# test6 = bytes([0, 1, 2] * 170 + [0, 1])
-# test7 = bytes([0, 1, 2, 3] * 128)
+    def calc_ent(self, buf):
+        set_bits = sum(self._bit_table[buf[position]] for position in self._positions)
+        if set_bits == 0:
+            return 0.0, 0
+        if set_bits == 8 * self.BYTES_TO_CHECK:
+            return 0.0, 255
+        
+        chis = (set_bits - self.EXPECTED_BITS) ** 2 / self.EXPECTED_BITS
+        # if chis <= 1:
+        #     return 1.0, None
+        # if chis >= 200:
+        #     return 0.0, None
+        # return 0.5
+        return 1 - chis / self.EXPECTED_BITS, None

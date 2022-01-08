@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from entropy_calculation import ent_samp
+from entropy_calculation import ChiSquare, ShannonsEntropy
 from sys import exit
 from argument_parsing import parse_arguments
 from mmap import mmap, ACCESS_READ
@@ -15,13 +15,15 @@ def main(args, output_args):
 
 
 def iterate(file, sector_size, output):
+    calculation_algorithm = ShannonsEntropy(sector_size)
+
     sector_number = 0
     buf = file.read(sector_size)
     while len(buf) == sector_size:
         ret = output.output(
             sector_number,
             sector_number * sector_size,
-            *ent_samp(buf)
+            *calculation_algorithm.calc_ent(buf)
         )
         if not ret:  # the pipe was closed
             exit(0)
