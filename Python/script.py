@@ -15,7 +15,7 @@ def main(args, output_args):
 
 
 def iterate(file, sector_size, output):
-    calculation_algorithm = ShannonsEntropy(sector_size)
+    calculation_algorithm = ChiSquare(sector_size)
 
     sector_number = 0
     buf = file.read(sector_size)
