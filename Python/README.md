@@ -7,6 +7,35 @@
 ### Change output method to CSV
     ./script.py --method csv disk.img
 ### Output method arguments
+#### scanning
+Visualizes image as a png image.
+Each sector as a pixel order from left to right.
+
+`--output-file out.png`
+will set the output file out out.png
+
+`--width 2048`
+will set the resulting image width to 2048 pixels
+
+#### scan-blocks
+Same as **scanning**, but the sectors are grouped in blocks of defined size.
+
+`--output-file out.png`
+will set the output file out out.png
+
+`--scan-block-size 64`
+will set the size of the side of the blocks to 64 pixels
+
+`--width 2048`
+will set the resulting image width to 2048 pixels, needs to be divisible by scan-block-size
+
+#### hilbert-curve
+Same as **scanning**, but the order of sectors follows the [Hilbert Curve](https://en.wikipedia.org/wiki/Hilbert_curve)
+
+`--output-file out.png`
+will set the output file out out.png
+
+
 #### sample-output
 `--output-file out.txt`
 will set the output file to out.txt
@@ -33,8 +62,5 @@ omits every sector the entropy of which is higher than 0.9
 - More descriptive description
 - Usage
 - Better project structure
-- Image output
-- scanning image output
-- blocks image output
-- hilbert curve image output
+- Color pallete choice
 - speed up entropy calculation
