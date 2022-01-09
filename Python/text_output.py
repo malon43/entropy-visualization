@@ -39,7 +39,7 @@ class TextLineOutput(OutputMethodBase):
         self.output_file.close()
         self.err_file.close()
 
-
+# sample-output
 class SampleOutput(TextLineOutput):
     def _get_line(
         self,
@@ -52,6 +52,7 @@ class SampleOutput(TextLineOutput):
                 (f" (pattern of 0x{sector_pattern:02x})" if sector_pattern is not None else ""))
 
 
+# csv
 class CSVOutput(TextLineOutput):
     default_parameters = {
         **TextLineOutput.default_parameters,

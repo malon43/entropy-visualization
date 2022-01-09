@@ -1,7 +1,7 @@
-from argparse import FileType
+from argparse import FileType, ArgumentTypeError
 from sys import stderr, stdout
 from base_output import OutputMethodBase, Parameter, print_check_closed_pipe
-from math import ceil
+from math import ceil, log, log2
 
 try:
     from PIL import Image
@@ -59,6 +59,7 @@ class ImageOutput(OutputMethodBase):
         self.err_file.close()
 
 
+# scan-blocks
 class ScanBlocks(ImageOutput):
     default_parameters = {
         **ImageOutput.default_parameters,
@@ -85,7 +86,7 @@ class ScanBlocks(ImageOutput):
         self._position += 1
         return out
 
-
+# scanning
 class Scanning(ScanBlocks):
     default_parameters = {
         **ImageOutput.default_parameters,
@@ -95,3 +96,46 @@ class Scanning(ScanBlocks):
     def __init__(self, input_size, **kwargs):
         self.scan_block_size = 1
         super().__init__(input_size, **kwargs)
+
+
+# hilbert-curve
+class HilbertCurve(ImageOutput):
+    def __init__(self, input_size, **kwargs):
+        side = ceil(log(input_size, 4))
+        if input_size > 3 * 4 ** (side - 1):
+            self.width = self.height = 2 ** side
+        else:
+            self.width = 2 ** (side - 1)
+            self.height = ceil(input_size / 2 ** (2 * side - 3)) * 2 ** (side - 2)
+
+        super().__init__(input_size, **kwargs)
+
+        self._position = 0
+    
+    def _get_size(self):
+        return self.width, self.height
+
+    def _next_pos(self):
+        p = self._d2xy(self.width, self._position % self.width ** 2)
+        out = p[0], p[1] + (self._position // self.width ** 2) * self.width
+        self._position += 1
+        return out 
+
+    def _d2xy(self, n, d):
+        x = y = 0
+        s = 1
+        while s < n:
+            ry = 1 & (d >> 1)
+            rx = 1 & (d ^ ry)
+
+            #rotate accordingly
+            if rx == 0 and ry == 1:
+                x, y = s - 1 - y, s - 1 - x
+            elif rx == 0:
+                x, y = y, x 
+            
+            x += s * rx
+            y += s * ry
+            d >>= 2
+            s <<= 1
+        return x, y
