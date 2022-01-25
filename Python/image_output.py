@@ -2,6 +2,7 @@ from argparse import FileType, ArgumentTypeError
 from sys import stderr, stdout
 from base_output import OutputMethodBase, Parameter, print_check_closed_pipe
 from math import ceil, log, log2
+from palettes import SamplePalette
 
 try:
     from PIL import Image
@@ -21,23 +22,10 @@ class ImageOutput(OutputMethodBase):
         super().__init__(input_size, **kwargs)
 
         self._image = Image.new('RGB', self._get_size(), (255, 255, 255))
+        self.palette = SamplePalette()  # TODO
 
-    def output(
-        self,
-        sector_number,
-        sector_offset,
-        sector_entropy,
-        sector_pattern
-    ):
-        # self._image.putpixel(self._next_pos(), self.palette.get())  # TODO
-        if sector_pattern == 0:
-            self._image.putpixel(self._next_pos(), (0, 0, 255))
-        elif sector_pattern is not None:
-            self._image.putpixel(
-                self._next_pos(), (0, int(255) * sector_pattern, 0))
-        else:
-            self._image.putpixel(self._next_pos(),
-                                 (int(255 * sector_entropy), 0, int(255 * sector_entropy)))
+    def output(self, *args):
+        self._image.putpixel(self._next_pos(), self.palette.get(*args))
         return True
 
     def _next_pos(self):
@@ -87,6 +75,8 @@ class ScanBlocks(ImageOutput):
         return out
 
 # scanning
+
+
 class Scanning(ScanBlocks):
     default_parameters = {
         **ImageOutput.default_parameters,
@@ -106,12 +96,13 @@ class HilbertCurve(ImageOutput):
             self.width = self.height = 2 ** side
         else:
             self.width = 2 ** (side - 1)
-            self.height = ceil(input_size / 2 ** (2 * side - 3)) * 2 ** (side - 2)
+            self.height = ceil(
+                input_size / 2 ** (2 * side - 3)) * 2 ** (side - 2)
 
         super().__init__(input_size, **kwargs)
 
         self._position = 0
-    
+
     def _get_size(self):
         return self.width, self.height
 
@@ -119,7 +110,7 @@ class HilbertCurve(ImageOutput):
         p = self._d2xy(self.width, self._position % self.width ** 2)
         out = p[0], p[1] + (self._position // self.width ** 2) * self.width
         self._position += 1
-        return out 
+        return out
 
     def _d2xy(self, n, d):
         x = y = 0
@@ -128,12 +119,12 @@ class HilbertCurve(ImageOutput):
             ry = 1 & (d >> 1)
             rx = 1 & (d ^ ry)
 
-            #rotate accordingly
+            # rotate accordingly
             if rx == 0 and ry == 1:
                 x, y = s - 1 - y, s - 1 - x
             elif rx == 0:
-                x, y = y, x 
-            
+                x, y = y, x
+
             x += s * rx
             y += s * ry
             d >>= 2
