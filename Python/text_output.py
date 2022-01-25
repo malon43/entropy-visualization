@@ -24,7 +24,7 @@ class TextLineOutput(OutputMethodBase):
 
     def _get_line(self, *args):
         raise NotImplementedError(
-            f"Children of {self.__class__.__name__} need to implement the _get_line() method"
+            f"Class {self.__class__.__name__} needs to implement the _get_line() method"
         )
 
     def output(self, *args):
@@ -38,6 +38,7 @@ class TextLineOutput(OutputMethodBase):
     def exit(self):
         self.output_file.close()
         self.err_file.close()
+
 
 # sample-output
 class SampleOutput(TextLineOutput):

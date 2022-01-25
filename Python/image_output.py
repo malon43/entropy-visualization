@@ -30,12 +30,12 @@ class ImageOutput(OutputMethodBase):
 
     def _next_pos(self):
         raise NotImplementedError(
-            f"Children of {self.__class__.__name__} need to implement the _get_line() method"
+            f"Class {self.__class__.__name__} needs to implement the _next_pos() method"
         )
 
     def _get_size(self):
         raise NotImplementedError(
-            f"Children of {self.__class__.__name__} need to implement the _get_line() method"
+            f"Class {self.__class__.__name__} needs to implement the _get_size() method"
         )
 
     def error(self, message):
