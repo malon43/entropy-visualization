@@ -61,12 +61,19 @@ class CSVOutput(TextLineOutput):
         "separator": Parameter(str, ",", "sets the provided string as a separator of the csv file")
     }
 
+    COLUMN_NAMES = [
+        "SECTOR_NUM",
+        "SECTOR_OFFSET",
+        "SECTOR_ENTROPY",
+        "PATTERN"
+    ]
+
     def __init__(self, input_size, **kwargs):
         super().__init__(input_size, **kwargs)
 
         if not self.no_header:
             print_check_closed_pipe(
-                "SECTOR_NUM,SECTOR_OFFSET,SECTOR_ENTROPY,PATTERN",
+                self.separator.join(self.COLUMN_NAMES),
                 file=self.output_file
             )
 
