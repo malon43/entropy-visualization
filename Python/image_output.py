@@ -1,4 +1,4 @@
-from argparse import FileType, ArgumentTypeError
+from argparse import FileType
 from sys import stderr, stdout
 from base_output import OutputMethodBase, Parameter, print_check_closed_pipe
 from math import ceil, log, log2
@@ -74,9 +74,8 @@ class ScanBlocks(ImageOutput):
         self._position += 1
         return out
 
+
 # scanning
-
-
 class Scanning(ScanBlocks):
     default_parameters = {
         **ImageOutput.default_parameters,
@@ -84,6 +83,7 @@ class Scanning(ScanBlocks):
     }
 
     def __init__(self, input_size, **kwargs):
+        # scanning is equivalent to scan-blocks with the block size of 1
         self.scan_block_size = 1
         super().__init__(input_size, **kwargs)
 
@@ -91,13 +91,19 @@ class Scanning(ScanBlocks):
 # hilbert-curve
 class HilbertCurve(ImageOutput):
     def __init__(self, input_size, **kwargs):
-        side = ceil(log(input_size, 4))
-        if input_size > 3 * 4 ** (side - 1):
-            self.width = self.height = 2 ** side
+        # get the smallest number of iterations of Hilbert curve required to fit all sectors
+        iterations = ceil(log(input_size, 4))
+
+        # if the image would take up more than three curves of lower iteration,
+        if input_size > 3 * 4 ** (iterations - 1):
+            # use smallest single curve that fits all sectors
+            self.width = self.height = 2 ** iterations
         else:
-            self.width = 2 ** (side - 1)
-            self.height = ceil(
-                input_size / 2 ** (2 * side - 3)) * 2 ** (side - 2)
+            # otherwise, use up to three curves of the lower iteration
+            self.width = 2 ** (iterations - 1)
+            # and set the smallest height (in half-curve-side increments) that fits all sectors
+            self.height = int(ceil(
+                input_size / 2 ** (2 * iterations - 3)) * 2 ** (iterations - 2))
 
         super().__init__(input_size, **kwargs)
 
@@ -113,6 +119,11 @@ class HilbertCurve(ImageOutput):
         return out
 
     def _d2xy(self, n, d):
+        """Calculates point on Hilbert curve from given distance
+
+        code adapted from 
+        https://en.wikipedia.org/wiki/Hilbert_curve#Applications_and_mapping_algorithms"""
+
         x = y = 0
         s = 1
         while s < n:
