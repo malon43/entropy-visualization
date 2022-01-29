@@ -1,5 +1,6 @@
 from typing import Dict, NamedTuple, Any
 
+
 class Parameter(NamedTuple):
     type: Any
     default_value: Any
@@ -24,17 +25,17 @@ class OutputMethodBase:
 
     def output(self, *args):
         raise NotImplementedError(
-            f"Children of {self.__class__.__name__} need to implement the output() method"
+            f"Class {self.__class__.__name__} needs to implement the output() method"
         )
 
     def error(self, message):
         raise NotImplementedError(
-            f"Children of {self.__class__.__name__} need to implement the error() method"
+            f"Class {self.__class__.__name__} needs to implement the error() method"
         )
 
     def exit(self):
         raise NotImplementedError(
-            f"Children of {self.__class__.__name__} need to implement the exit() method"
+            f"Class {self.__class__.__name__} needs to implement the exit() method"
         )
 
 
@@ -46,4 +47,3 @@ def print_check_closed_pipe(*args, **kwargs):
         return True
     except BrokenPipeError:
         return False
-
