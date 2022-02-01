@@ -1,5 +1,12 @@
 class SamplePalette:
     NEEDS_ALPHA = False
+    LEGEND = [
+        ((0, 0, 255), "Byte pattern (x00)"),
+        ((0, 255, 0), "Byte pattern (xff)"),
+        ((0, 64, 0), "Byte pattern (x40)"),
+        ((255, 0, 255), "High entropy"),
+        ((64, 0, 64), "Low entropy")
+    ]
 
     def get(self,
             sector_number,

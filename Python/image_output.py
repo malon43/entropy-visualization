@@ -1,5 +1,4 @@
 from argparse import ArgumentTypeError, FileType
-import math
 from sys import stderr, stdout
 from base_output import OutputMethodBase, Parameter, print_check_closed_pipe
 from math import ceil, log
@@ -7,7 +6,7 @@ import re
 from palettes import SamplePalette
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageDraw, ImageFont
 except ImportError:
     print("the Pillow library is not installed. \n"
           "Use `pip install Pillow` to install it", file=stderr)
@@ -64,25 +63,90 @@ def hex_color_type(x):
     raise ArgumentTypeError(f"'{x}' is not a valid hex code")
 
 
+def get_legend_size(legend, fnt):
+    if len(legend) < 1:
+        raise ValueError("Legend needs to have at least one element")
+
+    square_size = fnt.getsize('')[1]
+    spacing = square_size // 2
+    sizes = [fnt.getsize(ll[1]) for ll in legend]
+    width = spacing * 3 + square_size + max(x[0] for x in sizes)
+    height = sum(x[1] for x in sizes) + (len(sizes) + 1) * spacing
+
+    return width, height
+
+
+def draw_legend(image, legend, fnt, bg_color, fnt_color):
+    d = ImageDraw.Draw(image)
+    lw, lh = get_legend_size(legend, fnt)
+    outline_color = luminance_test_black_white(bg_color)
+    square_size = fnt.getsize('')[1]
+    spacing = square_size // 2
+    square_pos_w = image.size[0] - lw + spacing
+    text_pos_w = square_pos_w + square_size + spacing
+    text_pos_h = image.size[1] // 2 - lh // 2 + spacing
+
+    for color, desc in legend:
+        d.text((text_pos_w, text_pos_h), desc, font=fnt, fill=fnt_color)
+        d.rectangle(((square_pos_w, text_pos_h),
+                    (square_pos_w + square_size, text_pos_h + square_size)),
+                    fill=color,
+                    outline=outline_color,
+                    width=1)
+        text_pos_h += fnt.getsize(desc)[1] + spacing
+
+
+def luminance_test_black_white(bg_color):
+    """Based on W3 guidelines: https://www.w3.org/TR/WCAG20/#relativeluminancedef"""
+    srgb = [x / 255 for x in bg_color]
+    rgb = [srgb[i] / 12.92 if srgb[i] <= 0.03928 else ((srgb[i] + 0.055) / 1.055) ** 2.4
+           for i in range(3)]
+    rl = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+
+    return (255, 255, 255) if 0.17913 > rl else (0, 0, 0)
+
+
 class ImageOutput(OutputMethodBase):
     default_parameters = {
-        "output_file": Parameter(FileType('wb'), stdout, 'output file'),
-        "err_file": Parameter(FileType('w'), stderr, 'error output file'),
-        "background": Parameter(hex_color_type, (255, 255, 255), 'hex code of background color')
+        "output_file": Parameter(FileType('wb'), stdout, 'output file', 'stdout'),
+        "err_file": Parameter(FileType('w'), stderr, 'error output file', 'stderr'),
+        "no_legend": Parameter(bool, False, 'resulting image will not contain a legend'),
+        "background": Parameter(hex_color_type, (255, 255, 255), 'hex code of background color'),
+        "text_color": Parameter(hex_color_type, ..., 'hex code of font color of the legend', 'determined automatically')
     }
 
     def __init__(self, input_size, **kwargs):
         super().__init__(input_size, **kwargs)
 
         self.palette = SamplePalette()  # TODO
+
+        fnt = ImageFont.load_default()
+        vis_size = self._get_size()
+
+        if not self.no_legend:
+            legend_size = get_legend_size(self.palette.LEGEND, fnt)
+            total_size = (
+                vis_size[0] + legend_size[0],
+                max(vis_size[1], legend_size[1])
+            )
+        else:
+            total_size = vis_size
+
+        if self.text_color is Ellipsis:
+            self.text_color = luminance_test_black_white(self.background)
+
         self._rgba = self.palette.NEEDS_ALPHA \
-            or len(self.background) == 4  # \
-        # or len(self.text_color) == 4
+            or len(self.background) == 4 \
+            or len(self.text_color) == 4
+
         self._image = Image.new(
             'RGBA' if self._rgba else 'RGB',
-            self._get_size(),
+            total_size,
             self.background
         )
+        if not self.no_legend:
+            draw_legend(self._image, self.palette.LEGEND,
+                        fnt, self.background, self.text_color)
 
     def output(self, *args):
         self._image.putpixel(self._next_pos(), self.palette.get(*args))

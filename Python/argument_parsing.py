@@ -59,7 +59,7 @@ def parse_arguments():
             continue
         second_parser.add_argument(
             f"--{argument.replace('_', '-')}",
-            help=f"{value.help_} (default: {value.default_value})",
+            help=f"{value.help_} (default: {value.default_value if value.def_val_descr is None else value.def_val_descr})",
             type=value.type,
             default=value.default_value,
             dest=argument,

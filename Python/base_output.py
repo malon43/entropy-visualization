@@ -1,10 +1,13 @@
-from typing import Dict, NamedTuple, Any
+from typing import Dict, Any, Optional
+from dataclasses import dataclass
 
 
-class Parameter(NamedTuple):
+@dataclass
+class Parameter:
     type: Any
     default_value: Any
     help_: str
+    def_val_descr: Optional[str] = None
 
 
 class OutputMethodBase:
