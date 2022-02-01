@@ -1,7 +1,9 @@
-from argparse import FileType
+from argparse import ArgumentTypeError, FileType
+import math
 from sys import stderr, stdout
 from base_output import OutputMethodBase, Parameter, print_check_closed_pipe
-from math import ceil, log, log2
+from math import ceil, log
+import re
 from palettes import SamplePalette
 
 try:
@@ -12,17 +14,75 @@ except ImportError:
     exit(1)
 
 
+def hex_color_type(x):
+    colors = {
+        "white": (255, 255, 255),
+        "black": (0, 0, 0),
+        "transparent": (255, 255, 255, 0)
+    }
+    nx = x.strip().lower()
+    if nx in colors:
+        return colors[nx]
+
+    match = re.fullmatch(
+        r'#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})?', nx)
+    if match is not None:
+        return tuple(int(b, base=16) for b in match.groups() if b is not None)
+
+    match = re.fullmatch(
+        r'#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})\[(0?\.[0-9]+|1\.0*|0\.)\]', nx)
+    if match is not None:
+        return (
+            *map(lambda b: int(b, base=16), match.group(1, 2, 3)),
+            round(float(match.group(4)) * 255)
+        )
+
+    match = re.fullmatch(
+        r'#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})\[(\d{1,2}|100)\]', nx)
+    if match is not None:
+        return (
+            *map(lambda b: int(b, base=16), match.group(1, 2, 3)),
+            round((255 * int(match.group(4))) / 100)
+        )
+
+    match = re.fullmatch(
+        r'\[(0?\.[0-9]+|1\.0*|0\.)\]#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})', nx)
+    if match is not None:
+        return (
+            *map(lambda b: int(b, base=16), match.group(2, 3, 4)),
+            round(float(match.group(1)) * 255)
+        )
+
+    match = re.fullmatch(
+        r'\[(\d{1,2}|100)\]#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})', nx)
+    if match is not None:
+        return (
+            *map(lambda b: int(b, base=16), match.group(2, 3, 4)),
+            round((255 * int(match.group(1))) / 100)
+        )
+
+    raise ArgumentTypeError(f"'{x}' is not a valid hex code")
+
+
 class ImageOutput(OutputMethodBase):
     default_parameters = {
         "output_file": Parameter(FileType('wb'), stdout, 'output file'),
-        "err_file": Parameter(FileType('w'), stderr, 'error output file')
+        "err_file": Parameter(FileType('w'), stderr, 'error output file'),
+        "background": Parameter(hex_color_type, (255, 255, 255), 'hex code of background color')
     }
 
     def __init__(self, input_size, **kwargs):
         super().__init__(input_size, **kwargs)
 
-        self._image = Image.new('RGB', self._get_size(), (255, 255, 255))
         self.palette = SamplePalette()  # TODO
+        self._rgba = self.palette.NEEDS_ALPHA \
+            or len(self.background) == 4  # \
+        # or len(self.text_color) == 4
+        self._image = Image.new(
+            'RGBA' if self._rgba else 'RGB',
+            self._get_size(),
+            self.background
+        )
 
     def output(self, *args):
         self._image.putpixel(self._next_pos(), self.palette.get(*args))
@@ -68,7 +128,7 @@ class ScanBlocks(ImageOutput):
 
     def _next_pos(self):
         out = ((self._position % self.scan_block_size +
-               (self._position // self.scan_block_size ** 2) * self.scan_block_size) % self.width,
+                (self._position // self.scan_block_size ** 2) * self.scan_block_size) % self.width,
                (self._position // self.scan_block_size) % self.scan_block_size + self._position //
                (self.scan_block_size * self.width) * self.scan_block_size)
         self._position += 1
@@ -121,7 +181,7 @@ class HilbertCurve(ImageOutput):
     def _d2xy(self, n, d):
         """Calculates point on Hilbert curve from given distance
 
-        code adapted from 
+        code adapted from
         https://en.wikipedia.org/wiki/Hilbert_curve#Applications_and_mapping_algorithms"""
 
         x = y = 0

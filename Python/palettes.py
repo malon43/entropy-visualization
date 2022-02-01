@@ -1,4 +1,6 @@
 class SamplePalette:
+    NEEDS_ALPHA = False
+
     def get(self,
             sector_number,
             sector_offset,
