@@ -1,7 +1,7 @@
 from argparse import ArgumentTypeError, FileType
 from sys import stderr, stdout
 from base_output import OutputMethodBase, Parameter, print_check_closed_pipe
-from math import ceil, log
+from math import ceil, log, sqrt
 import re
 from palettes import SamplePalette
 
@@ -111,7 +111,7 @@ class ImageOutput(OutputMethodBase):
         "output_file": Parameter(FileType('wb'), stdout, 'output file', 'stdout'),
         "err_file": Parameter(FileType('w'), stderr, 'error output file', 'stderr'),
         "no_legend": Parameter(bool, False, 'resulting image will not contain a legend'),
-        "background": Parameter(hex_color_type, (255, 255, 255), 'hex code of background color'),
+        "background": Parameter(hex_color_type, (255, 255, 255), 'hex code of background color', 'white'),
         "text_color": Parameter(hex_color_type, ..., 'hex code of font color of the legend', 'determined automatically')
     }
 
@@ -166,7 +166,10 @@ class ImageOutput(OutputMethodBase):
         return print_check_closed_pipe(message, file=self.err_file)
 
     def exit(self):
-        self._image.save(self.output_file, "PNG")  # TODO
+        try:
+            self._image.save(self.output_file)
+        except ValueError:
+            self._image.save(self.output_file, "PNG")
         self.output_file.close()
         self.err_file.close()
 
@@ -175,20 +178,45 @@ class ImageOutput(OutputMethodBase):
 class ScanBlocks(ImageOutput):
     default_parameters = {
         **ImageOutput.default_parameters,
-        "width": Parameter(int, 1024, "the width of resulting image in pixels"),
-        "scan_block_size": Parameter(int, 32, "the size of block groups of the resulting image")
+        "width": Parameter(int, ..., "the width of resulting image in pixels", "automatic square"),
+        "scan_block_size": Parameter(int, ..., "the size of block groups of the resulting image", "idk")
     }
 
     def __init__(self, input_size, **kwargs):
         super().__init__(input_size, **kwargs)
 
-        if self.width % self.scan_block_size != 0:
-            raise ValueError("width needs to be a multiple of scan-block-size")
-
         self._position = 0
+        sbsie = self.scan_block_size is Ellipsis
+        self.width, self.scan_block_size = self._calc_widths()
+        if sbsie and self.scan_block_size == 1:
+            print_check_closed_pipe(f"warn: sensible scan block size for width {self.width}"
+                                    " could not be selected, defaulting to scanning.", file=stderr)
+
+    def _calc_widths(self):
+        PREFFERED_BLOCK_SIZE = 32
+
+        if self.width is not Ellipsis and self.scan_block_size is not Ellipsis:
+            if self.width % self.scan_block_size != 0:
+                raise ValueError("width needs to be a multiple of scan-block-size")
+            return self.width, self.scan_block_size
+        if self.width is not Ellipsis and self.scan_block_size is Ellipsis:
+            # return the smallest divisor of width larger or queal to preffered block size
+            for i in range(PREFFERED_BLOCK_SIZE, ceil(sqrt(self.width))):
+                if self.width % i == 0:
+                    return self.width, i
+            # otherwise return the largest smaller divisor of width as scan block size
+            for i in range(PREFFERED_BLOCK_SIZE - 1, 0, -1):
+                if self.width % i == 0:
+                    return self.width, i
+        sbs = PREFFERED_BLOCK_SIZE if self.scan_block_size is Ellipsis else self.scan_block_size
+        return ceil(ceil(sqrt(self._input_size)) / sbs) * sbs, sbs
+        
 
     def _get_size(self):
-        return self.width, ceil(self._input_size / (self.scan_block_size * self.width)) * self.scan_block_size
+        w, sbs = self._calc_widths()
+        if self._input_size % (w * sbs) < sbs ** 2:
+            return w, int(self._input_size / (sbs * w)) + ceil((self._input_size % (w * sbs)) / sbs)
+        return w, ceil(self._input_size / (sbs * w)) * sbs
 
     def _next_pos(self):
         out = ((self._position % self.scan_block_size +
@@ -197,13 +225,21 @@ class ScanBlocks(ImageOutput):
                (self.scan_block_size * self.width) * self.scan_block_size)
         self._position += 1
         return out
-
+    
+    @staticmethod
+    def check_args(**kwargs):
+        if "width" in kwargs and "scan_block_size" in kwargs \
+             and kwargs["width"] is not Ellipsis \
+             and kwargs["scan_block_size"] is not Ellipsis \
+             and kwargs["width"] % kwargs["scan_block_size"] != 0:
+            return "width needs to be a multiple of scan-block-size"
+        return None
 
 # scanning
 class Scanning(ScanBlocks):
     default_parameters = {
         **ImageOutput.default_parameters,
-        "width": Parameter(int, 1024, "the width of the resulting image in pixels")
+        "width": Parameter(int, ..., "the width of the resulting image in pixels", "square")
     }
 
     def __init__(self, input_size, **kwargs):

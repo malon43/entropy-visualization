@@ -1,8 +1,10 @@
 import argparse
 from output_methods import output_methods
+from sys import argv, exit, stderr
+from os import path
 
 DEFAULT_SECTOR_SIZE = 512
-DEFAULT_OUTPUT_METHOD = 'sample-output'
+DEFAULT_OUTPUT_METHOD = 'scanning'
 
 
 def sector_size_type(x):
@@ -68,4 +70,12 @@ def parse_arguments():
     output_args = second_parser.parse_args(rest)
     main_args.file = output_args.file
     delattr(output_args, 'file')
+
+    err = main_args.output_method.check_args(**vars(output_args))
+    if err is not None:
+        print(second_parser.format_usage(), file=stderr)
+        print(f"{path.basename(argv[0])}: {err}", file=stderr)
+        exit(1)
+
+        
     return main_args, output_args

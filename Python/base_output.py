@@ -31,6 +31,11 @@ class OutputMethodBase:
             f"Class {self.__class__.__name__} needs to implement the output() method"
         )
 
+    @staticmethod
+    def check_args(**kwargs):
+        """Return None if args are correct otherwise return error message"""
+        return None
+
     def error(self, message):
         raise NotImplementedError(
             f"Class {self.__class__.__name__} needs to implement the error() method"
