@@ -32,7 +32,7 @@ def iterate(file, sector_size, output):
         buf = file.read(sector_size)
     if len(buf) != 0:
         output.error(
-            f"The size of provided image was not a multiple of {sector_size}"
+            f'The size of provided image was not a multiple of {sector_size}'
         )
         exit(1)
 

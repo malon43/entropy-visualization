@@ -28,28 +28,28 @@ class OutputMethodBase:
 
     def output(self, *args):
         raise NotImplementedError(
-            f"Class {self.__class__.__name__} needs to implement the output() method"
+            f'Class {self.__class__.__name__} needs to implement the output() method'
         )
 
     @staticmethod
     def check_args(**kwargs):
-        """Return None if args are correct otherwise return error message"""
+        '''Return None if args are correct otherwise return error message'''
         return None
 
     def error(self, message):
         raise NotImplementedError(
-            f"Class {self.__class__.__name__} needs to implement the error() method"
+            f'Class {self.__class__.__name__} needs to implement the error() method'
         )
 
     def exit(self):
         raise NotImplementedError(
-            f"Class {self.__class__.__name__} needs to implement the exit() method"
+            f'Class {self.__class__.__name__} needs to implement the exit() method'
         )
 
 
 def print_check_closed_pipe(*args, **kwargs):
-    """Returns False on BrokenPipeError,
-       otherwise lets error through or returns True"""
+    '''Returns False on BrokenPipeError,
+       otherwise lets error through or returns True'''
     try:
         print(*args, **kwargs)
         return True

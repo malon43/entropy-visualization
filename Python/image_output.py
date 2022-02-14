@@ -8,16 +8,16 @@ from palettes import SamplePalette
 try:
     from PIL import Image, ImageDraw, ImageFont
 except ImportError:
-    print("the Pillow library is not installed. \n"
-          "Use `pip install Pillow` to install it", file=stderr)
+    print('the Pillow library is not installed. \n'
+          'Use `pip install Pillow` to install it', file=stderr)
     exit(1)
 
 
 def hex_color_type(x):
     colors = {
-        "white": (255, 255, 255),
-        "black": (0, 0, 0),
-        "transparent": (255, 255, 255, 0)
+        'white': (255, 255, 255),
+        'black': (0, 0, 0),
+        'transparent': (255, 255, 255, 0)
     }
     nx = x.strip().lower()
     if nx in colors:
@@ -60,12 +60,12 @@ def hex_color_type(x):
             round((255 * int(match.group(1))) / 100)
         )
 
-    raise ArgumentTypeError(f"'{x}' is not a valid hex code")
+    raise ArgumentTypeError(f'\'{x}\' is not a valid hex code')
 
 
 def get_legend_size(legend, fnt):
     if len(legend) < 1:
-        raise ValueError("Legend needs to have at least one element")
+        raise ValueError('Legend needs to have at least one element')
 
     square_size = fnt.getsize('')[1]
     spacing = square_size // 2
@@ -97,7 +97,7 @@ def draw_legend(image, legend, fnt, bg_color, fnt_color):
 
 
 def luminance_test_black_white(bg_color):
-    """Based on W3 guidelines: https://www.w3.org/TR/WCAG20/#relativeluminancedef"""
+    '''Based on W3 guidelines: https://www.w3.org/TR/WCAG20/#relativeluminancedef'''
     srgb = [x / 255 for x in bg_color]
     rgb = [srgb[i] / 12.92 if srgb[i] <= 0.03928 else ((srgb[i] + 0.055) / 1.055) ** 2.4
            for i in range(3)]
@@ -108,11 +108,11 @@ def luminance_test_black_white(bg_color):
 
 class ImageOutput(OutputMethodBase):
     default_parameters = {
-        "output_file": Parameter(FileType('wb'), stdout, 'output file', 'stdout'),
-        "err_file": Parameter(FileType('w'), stderr, 'error output file', 'stderr'),
-        "no_legend": Parameter(bool, False, 'resulting image will not contain a legend'),
-        "background": Parameter(hex_color_type, (255, 255, 255), 'hex code of background color', 'white'),
-        "text_color": Parameter(hex_color_type, ..., 'hex code of font color of the legend', 'determined automatically')
+        'output_file': Parameter(FileType('wb'), stdout, 'output file', 'stdout'),
+        'err_file': Parameter(FileType('w'), stderr, 'error output file', 'stderr'),
+        'no_legend': Parameter(bool, False, 'resulting image will not contain a legend'),
+        'background': Parameter(hex_color_type, (255, 255, 255), 'hex code of background color', 'white'),
+        'text_color': Parameter(hex_color_type, ..., 'hex code of font color of the legend', 'determined automatically')
     }
 
     def __init__(self, input_size, **kwargs):
@@ -154,12 +154,12 @@ class ImageOutput(OutputMethodBase):
 
     def _next_pos(self):
         raise NotImplementedError(
-            f"Class {self.__class__.__name__} needs to implement the _next_pos() method"
+            f'Class {self.__class__.__name__} needs to implement the _next_pos() method'
         )
 
     def _get_size(self):
         raise NotImplementedError(
-            f"Class {self.__class__.__name__} needs to implement the _get_size() method"
+            f'Class {self.__class__.__name__} needs to implement the _get_size() method'
         )
 
     def error(self, message):
@@ -169,7 +169,7 @@ class ImageOutput(OutputMethodBase):
         try:
             self._image.save(self.output_file)
         except ValueError:
-            self._image.save(self.output_file, "PNG")
+            self._image.save(self.output_file, 'PNG')
         self.output_file.close()
         self.err_file.close()
 
@@ -178,8 +178,8 @@ class ImageOutput(OutputMethodBase):
 class ScanBlocks(ImageOutput):
     default_parameters = {
         **ImageOutput.default_parameters,
-        "width": Parameter(int, ..., "the width of resulting image in pixels", "automatic square"),
-        "scan_block_size": Parameter(int, ..., "the size of block groups of the resulting image", "idk")
+        'width': Parameter(int, ..., 'the width of resulting image in pixels', 'automatic square'),
+        'scan_block_size': Parameter(int, ..., 'the size of block groups of the resulting image', 'automatic')
     }
 
     def __init__(self, input_size, **kwargs):
@@ -189,15 +189,15 @@ class ScanBlocks(ImageOutput):
         sbsie = self.scan_block_size is Ellipsis
         self.width, self.scan_block_size = self._calc_widths()
         if sbsie and self.scan_block_size == 1:
-            print_check_closed_pipe(f"warn: sensible scan block size for width {self.width}"
-                                    " could not be selected, defaulting to scanning.", file=stderr)
+            print_check_closed_pipe(f'warn: sensible scan block size for width {self.width}'
+                                    ' could not be selected, defaulting to scanning.', file=stderr)
 
     def _calc_widths(self):
         PREFFERED_BLOCK_SIZE = 32
 
         if self.width is not Ellipsis and self.scan_block_size is not Ellipsis:
             if self.width % self.scan_block_size != 0:
-                raise ValueError("width needs to be a multiple of scan-block-size")
+                raise ValueError('width needs to be a multiple of scan-block-size')
             return self.width, self.scan_block_size
         if self.width is not Ellipsis and self.scan_block_size is Ellipsis:
             # return the smallest divisor of width larger or queal to preffered block size
@@ -228,18 +228,18 @@ class ScanBlocks(ImageOutput):
     
     @staticmethod
     def check_args(**kwargs):
-        if "width" in kwargs and "scan_block_size" in kwargs \
-             and kwargs["width"] is not Ellipsis \
-             and kwargs["scan_block_size"] is not Ellipsis \
-             and kwargs["width"] % kwargs["scan_block_size"] != 0:
-            return "width needs to be a multiple of scan-block-size"
+        if 'width' in kwargs and 'scan_block_size' in kwargs \
+             and kwargs['width'] is not Ellipsis \
+             and kwargs['scan_block_size'] is not Ellipsis \
+             and kwargs['width'] % kwargs['scan_block_size'] != 0:
+            return 'width needs to be a multiple of scan-block-size'
         return None
 
 # scanning
 class Scanning(ScanBlocks):
     default_parameters = {
         **ImageOutput.default_parameters,
-        "width": Parameter(int, ..., "the width of the resulting image in pixels", "square")
+        'width': Parameter(int, ..., 'the width of the resulting image in pixels', 'square')
     }
 
     def __init__(self, input_size, **kwargs):
@@ -279,10 +279,10 @@ class HilbertCurve(ImageOutput):
         return out
 
     def _d2xy(self, n, d):
-        """Calculates point on Hilbert curve from given distance
+        '''Calculates point on Hilbert curve from given distance
 
         code adapted from
-        https://en.wikipedia.org/wiki/Hilbert_curve#Applications_and_mapping_algorithms"""
+        https://en.wikipedia.org/wiki/Hilbert_curve#Applications_and_mapping_algorithms'''
 
         x = y = 0
         s = 1
