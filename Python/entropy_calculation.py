@@ -1,25 +1,38 @@
+from enum import IntEnum
 from math import log2
 from collections import Counter
-from random import sample
+from sys import stderr
+
+try:
+    from scipy.stats import chi2
+except ImportError:
+    print('the scipy library is not installed. \n'
+          'Use `pip install scipy` to install it', file=stderr)
+    exit(1)
+
+
+class ResultFlag(IntEnum):
+    NONE = 0
+    SINGLE_BYTE_PATTERN = 1
+    NOT_RANDOM = 2
+    RANDOM = 3
+    RANDOMNESS_SUSPICIOUSLY_HIGH = 4
 
 
 class ShannonsEntropy:
     def __init__(self, sector_size):
         self.sector_size = sector_size
 
-    def calc_ent(self, buf):
+    def calc(self, buf):
         ''' Calculates and returns sample entropy on byte level for
         the argument and single byte pattern if present or None.
 
         This code has been adapted from 
         https://gitlab.com/cryptsetup/cryptsetup/-/blob/master/misc/keyslot_checker/chk_luks_keyslots.c#L81
         '''
-        if len(buf) != self.sector_size:
-            raise ValueError('Invalid buf size')
-
         freq = Counter(buf)
         if len(freq) == 1:
-            return 0.0, freq.popitem()[0]
+            return 0.0, ResultFlag.SINGLE_BYTE_PATTERN, freq.popitem()[0]
 
         entropy = 0.0
         for f in freq.values():
@@ -29,37 +42,116 @@ class ShannonsEntropy:
 
         normalized_entropy = abs(entropy) / 8
 
-        return normalized_entropy, None
+        return normalized_entropy, ResultFlag.NONE, None
 
 
-class ChiSquare:
-    def __init__(self, sector_size):
-        self.bytes_to_check = min(64, sector_size)
-        self.expected_bits = self.bytes_to_check * 4
-        self.sector_size = sector_size
+class ChiSquare8:
+    def __init__(self, sector_size, rand_lim=0.9999, sus_rand_lim=0.0001):
+        self.expected = sector_size / 256
+        if self.expected < 5:
+            print('warn: the sector size seems to be too small to use with this calculation method.', file=stderr)
+        self.random_limit = chi2.ppf(rand_lim, 255)
+        self.sus_random_limit = chi2.ppf(sus_rand_lim, 255)
+    
+    def calc(self, buf):
+        counts = Counter(buf)
+        if len(counts) == 1:
+            return 0.0, ResultFlag.SINGLE_BYTE_PATTERN, counts.popitem()[0]
 
-        # randomly generated positions of checked bytes
-        self._positions = sample(range(sector_size), self.bytes_to_check)
+        chis = sum((counts[i] - self.expected) ** 2 for i in range(256)) / self.expected
+        if chis < self.sus_random_limit:
+            return 0.0, ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH, None
+        if chis < self.random_limit:
+            return 1.0, ResultFlag.RANDOM, None
+        return 0.5, ResultFlag.NOT_RANDOM, None 
 
-        # Table to look up the bit counts of byte values
-        self._bit_table = [0] * 256
+class ChiSquare4:
+    def __init__(self, sector_size, rand_lim=0.9999, sus_rand_lim=0.0001):
+        self.expected = sector_size / 8
+        if self.expected < 5:
+            print('warn: the sector size seems to be too small to use with this calculation method.', file=stderr)
+        self.random_limit = chi2.ppf(rand_lim, 15)
+        self.sus_random_limit = chi2.ppf(sus_rand_lim, 15)
 
-        # Initialize the _bit_table
-        for i in range(256):
-            self._bit_table[i] = self._bit_table[i >> 1] + (i & 1)
+    def calc(self, buf):
+        counts = Counter(buf)
+        if len(counts) == 1:
+            return 0.0, ResultFlag.SINGLE_BYTE_PATTERN, counts.popitem()[0]
 
-    def calc_ent(self, buf):
-        set_bits = sum(self._bit_table[buf[position]]
-                       for position in self._positions)
+        vals = [0] * 16
+        for byte, count in counts.items():
+            vals[byte & 15] += count
+            vals[byte >> 4] += count
+        chis = sum((i - self.expected) ** 2 for i in vals) / self.expected
+        if chis < self.sus_random_limit:
+            return 0.0, ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH, None
+        if chis < self.random_limit:
+            return 1.0, ResultFlag.RANDOM, None
+        return 0.5, ResultFlag.NOT_RANDOM, None
+
+
+class ChiSquare3:
+    N = 3
+
+    def __init__(self, sector_size, rand_lim=0.9999, sus_rand_lim=0.0001):
+        self.single_byte_pattern_count = (sector_size * 8) // self.N
+        self.expected = ((sector_size * 8) // self.N) / (2 ** self.N)
+        if self.expected < 5:
+            print('warn: the sector size seems to be too small to use with this calculation method.', file=stderr)
+        self.random_limit = chi2.ppf(rand_lim, 2 ** self.N - 1)
+        self.sus_random_limit = chi2.ppf(sus_rand_lim, 2 ** self.N - 1)
+    
+    def calc(self, buf):
+        vals = [0] * (2 ** self.N)
+        rem = 0
+        bits = 0
+        for byte in buf:
+            for offset in range(8):
+                rem = (rem << 1) | ((byte >> (7 - offset)) & 1)
+                bits += 1
+                if bits == self.N:
+                    vals[rem] += 1
+                    bits = 0
+                    rem = 0
+        if vals[0] == self.single_byte_pattern_count:
+            return 0.0, ResultFlag.SINGLE_BYTE_PATTERN, 0
+        if vals[-1] == self.single_byte_pattern_count:
+            return 0.0, ResultFlag.SINGLE_BYTE_PATTERN, 255
+        chis = sum((i - self.expected) ** 2 for i in vals) / self.expected
+        if chis < self.sus_random_limit:
+            return 0.0, ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH, None
+        if chis < self.random_limit:
+            return 1.0, ResultFlag.RANDOM, None
+        return 0.5, ResultFlag.NOT_RANDOM, None
+
+
+class ChiSquare1:
+    def __init__(self, sector_size, rand_lim=0.9999, sus_rand_lim=0.0001):
+        self.single_byte_pattern_count = sector_size * 8
+        self.expected = sector_size * 4
+        if self.expected < 5:
+            print('warn: the sector size seems to be too small to use with this calculation method.', file=stderr)
+        self.random_limit = chi2.ppf(rand_lim, 1)
+        self.sus_random_limit = chi2.ppf(sus_rand_lim, 1)
+    
+    def calc(self, buf):
+        set_bits = sum(map(int.bit_count, buf))
         if set_bits == 0:
-            return 0.0, 0
-        if set_bits == 8 * self.bytes_to_check:
-            return 0.0, 255
+            return 0.0, ResultFlag.SINGLE_BYTE_PATTERN, 0
+        if set_bits == self.single_byte_pattern_count:
+            return 0.0, ResultFlag.SINGLE_BYTE_PATTERN, 255
+        chis = 2 * (set_bits - self.expected) ** 2 / self.expected
+        if chis < self.sus_random_limit:
+            return 0.0, ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH, None
+        if chis < self.random_limit:
+            return 1.0, ResultFlag.RANDOM, None
+        return 0.5, ResultFlag.NOT_RANDOM, None
 
-        chis = (set_bits - self.expected_bits) ** 2 / self.expected_bits
-        # if chis <= 1:
-        #     return 1.0, None
-        # if chis >= 200:
-        #     return 0.0, None
-        # return 0.5
-        return 1 - chis / self.expected_bits, None
+
+analysis_methods = {
+    'shannon': ShannonsEntropy,
+    'chi2-8': ChiSquare8,
+    'chi2-4': ChiSquare4,
+    'chi2-3': ChiSquare3,
+    'chi2-1': ChiSquare1
+}

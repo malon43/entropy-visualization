@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
 
@@ -8,6 +8,7 @@ class Parameter:
     default_value: Any
     help_: str
     def_val_descr: Optional[str] = None
+    available: Optional[List[str]] = None
 
 
 class OutputMethodBase:

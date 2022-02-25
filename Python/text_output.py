@@ -1,4 +1,6 @@
 from argparse import ArgumentTypeError, FileType
+from enum import IntEnum
+from math import inf
 from sys import stderr, stdout
 from base_output import OutputMethodBase, Parameter, print_check_closed_pipe
 
@@ -14,10 +16,10 @@ def entropy_limit_type(x):
 
 class TextLineOutput(OutputMethodBase):
     default_parameters = {
-        "output_file": Parameter(FileType('w'), stdout, 'output file'),
-        "err_file": Parameter(FileType('w'), stderr, 'error output file'),
+        "output_file": Parameter(FileType('w'), stdout, 'output file', 'stdout'),
+        "err_file": Parameter(FileType('w'), stderr, 'error output file', 'stderr'),
         "entropy_limit": Parameter(
-            entropy_limit_type, 1.0,
+            entropy_limit_type, inf,
             'omits every sector the entropy of which is higher than the provided value'
         )
     }
@@ -46,10 +48,11 @@ class SampleOutput(TextLineOutput):
         self,
         sector_number,
         sector_offset,
-        sector_entropy,
+        sector_randomness,
+        result_flag,
         sector_pattern
     ):
-        return (f"{sector_number} (0x{sector_offset:x}) - {sector_entropy:.4f}" +
+        return (f"{sector_number} (0x{sector_offset:x}) - {sector_randomness:.4f}, {result_flag.name}" +
                 (f" (pattern of 0x{sector_pattern:02x})" if sector_pattern is not None else ""))
 
 
@@ -64,7 +67,8 @@ class CSVOutput(TextLineOutput):
     COLUMN_NAMES = [
         "SECTOR_NUM",
         "SECTOR_OFFSET",
-        "SECTOR_ENTROPY",
+        "SECTOR_RANDOMNESS",
+        "RESULT_FLAG",
         "PATTERN"
     ]
 
@@ -78,4 +82,12 @@ class CSVOutput(TextLineOutput):
             )
 
     def _get_line(self, *args):
-        return self.separator.join('' if x is None else str(x) for x in args)
+        return self.separator.join(map(self._string_map, args))
+    
+    @staticmethod
+    def _string_map(x):
+        if x is None:
+            return ''
+        if isinstance(x, IntEnum):
+            return str(x.value)
+        return str(x)

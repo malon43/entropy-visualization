@@ -3,7 +3,7 @@ from sys import stderr, stdout
 from base_output import OutputMethodBase, Parameter, print_check_closed_pipe
 from math import ceil, log, sqrt
 import re
-from palettes import SamplePalette
+from palettes import palettes
 
 try:
     from PIL import Image, ImageDraw, ImageFont
@@ -37,7 +37,7 @@ def hex_color_type(x):
         )
 
     match = re.fullmatch(
-        r'#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})\[(\d{1,2}|100)\]', nx)
+        r'#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})\[(\d{1,2}|100)%?\]', nx)
     if match is not None:
         return (
             *map(lambda b: int(b, base=16), match.group(1, 2, 3)),
@@ -53,7 +53,7 @@ def hex_color_type(x):
         )
 
     match = re.fullmatch(
-        r'\[(\d{1,2}|100)\]#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})', nx)
+        r'\[(\d{1,2}|100)%?\]#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})', nx)
     if match is not None:
         return (
             *map(lambda b: int(b, base=16), match.group(2, 3, 4)),
@@ -63,37 +63,11 @@ def hex_color_type(x):
     raise ArgumentTypeError(f'\'{x}\' is not a valid hex code')
 
 
-def get_legend_size(legend, fnt):
-    if len(legend) < 1:
-        raise ValueError('Legend needs to have at least one element')
+def palette_type(x):
+    if x not in palettes:
+        raise ArgumentTypeError(f'{x} is not a valid palette')
+    return palettes[x]
 
-    square_size = fnt.getsize('')[1]
-    spacing = square_size // 2
-    sizes = [fnt.getsize(ll[1]) for ll in legend]
-    width = spacing * 3 + square_size + max(x[0] for x in sizes)
-    height = sum(x[1] for x in sizes) + (len(sizes) + 1) * spacing
-
-    return width, height
-
-
-def draw_legend(image, legend, fnt, bg_color, fnt_color):
-    d = ImageDraw.Draw(image)
-    lw, lh = get_legend_size(legend, fnt)
-    outline_color = luminance_test_black_white(bg_color)
-    square_size = fnt.getsize('')[1]
-    spacing = square_size // 2
-    square_pos_w = image.size[0] - lw + spacing
-    text_pos_w = square_pos_w + square_size + spacing
-    text_pos_h = image.size[1] // 2 - lh // 2 + spacing
-
-    for color, desc in legend:
-        d.text((text_pos_w, text_pos_h), desc, font=fnt, fill=fnt_color)
-        d.rectangle(((square_pos_w, text_pos_h),
-                    (square_pos_w + square_size, text_pos_h + square_size)),
-                    fill=color,
-                    outline=outline_color,
-                    width=1)
-        text_pos_h += fnt.getsize(desc)[1] + spacing
 
 
 def luminance_test_black_white(bg_color):
@@ -112,19 +86,18 @@ class ImageOutput(OutputMethodBase):
         'err_file': Parameter(FileType('w'), stderr, 'error output file', 'stderr'),
         'no_legend': Parameter(bool, False, 'resulting image will not contain a legend'),
         'background': Parameter(hex_color_type, (255, 255, 255), 'hex code of background color', 'white'),
-        'text_color': Parameter(hex_color_type, ..., 'hex code of font color of the legend', 'determined automatically')
+        'text_color': Parameter(hex_color_type, ..., 'hex code of font color of the legend', 'determined automatically'),
+        'palette': Parameter(palette_type, 'sample', 'color palette to use', available=list(palettes.keys()))
     }
 
     def __init__(self, input_size, **kwargs):
         super().__init__(input_size, **kwargs)
 
-        self.palette = SamplePalette()  # TODO
-
         fnt = ImageFont.load_default()
         vis_size = self._get_size()
 
-        if not self.no_legend:
-            legend_size = get_legend_size(self.palette.LEGEND, fnt)
+        if not self.no_legend and len(self.palette.LEGEND) > 0:
+            legend_size = self._get_legend_size(fnt)
             total_size = (
                 vis_size[0] + legend_size[0],
                 max(vis_size[1], legend_size[1])
@@ -144,9 +117,8 @@ class ImageOutput(OutputMethodBase):
             total_size,
             self.background
         )
-        if not self.no_legend:
-            draw_legend(self._image, self.palette.LEGEND,
-                        fnt, self.background, self.text_color)
+        if not self.no_legend and len(self.palette.LEGEND) > 0:
+            self._draw_legend(fnt)
 
     def output(self, *args):
         self._image.putpixel(self._next_pos(), self.palette.get(*args))
@@ -172,6 +144,38 @@ class ImageOutput(OutputMethodBase):
             self._image.save(self.output_file, 'PNG')
         self.output_file.close()
         self.err_file.close()
+    
+    def _get_legend_size(self, fnt):
+        if len(self.palette.LEGEND) < 1:
+            raise ValueError('Legend needs to have at least one element')
+
+        square_size = fnt.getsize('')[1]
+        spacing = square_size // 2
+        sizes = [fnt.getsize(ll[1]) for ll in self.palette.LEGEND]
+        width = spacing * 3 + square_size + max(x[0] for x in sizes)
+        height = sum(x[1] for x in sizes) + (len(sizes) + 1) * spacing
+
+        return width, height
+
+    def _draw_legend(self, fnt):
+        d = ImageDraw.Draw(self._image)
+        lw, lh = self._get_legend_size(fnt)
+        outline_color = luminance_test_black_white(self.background)
+        square_size = fnt.getsize('')[1]
+        spacing = square_size // 2
+        square_pos_w = self._image.size[0] - lw + spacing
+        text_pos_w = square_pos_w + square_size + spacing
+        text_pos_h = self._image.size[1] // 2 - lh // 2 + spacing
+
+        for color, desc in self.palette.LEGEND:
+            d.text((text_pos_w, text_pos_h), desc, font=fnt, fill=self.text_color)
+            d.rectangle(((square_pos_w, text_pos_h),
+                        (square_pos_w + square_size, text_pos_h + square_size)),
+                        fill=color,
+                        outline=outline_color,
+                        width=1)
+            text_pos_h += fnt.getsize(desc)[1] + spacing
+
 
 
 # scan-blocks
@@ -200,7 +204,7 @@ class ScanBlocks(ImageOutput):
                 raise ValueError('width needs to be a multiple of scan-block-size')
             return self.width, self.scan_block_size
         if self.width is not Ellipsis and self.scan_block_size is Ellipsis:
-            # return the smallest divisor of width larger or queal to preffered block size
+            # return the smallest divisor of width larger or equal to preffered block size
             for i in range(PREFFERED_BLOCK_SIZE, ceil(sqrt(self.width))):
                 if self.width % i == 0:
                     return self.width, i

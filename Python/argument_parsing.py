@@ -1,10 +1,12 @@
 import argparse
 from output_methods import output_methods
+from entropy_calculation import analysis_methods
 from sys import argv, exit, stderr
 from os import path
 
 DEFAULT_SECTOR_SIZE = 512
 DEFAULT_OUTPUT_METHOD = 'scanning'
+DEFAULT_ANALYSIS_METHOD = 'chi2-4'
 
 
 def sector_size_type(x):
@@ -19,10 +21,16 @@ def sector_size_type(x):
 def output_method_type(x):
     if x not in output_methods:
         raise argparse.ArgumentTypeError(
-            f'{x} is not a valid output_method'
+            f'{x} is not a valid output method'
         )
     return output_methods[x]
 
+def analysis_method_type(x):
+    if not x in analysis_methods:
+        raise argparse.ArgumentTypeError(
+            f'{x} is not a valid analysis method'
+        )
+    return analysis_methods[x]
 
 def parse_arguments():
     main_parser = argparse.ArgumentParser(
@@ -40,6 +48,13 @@ def parse_arguments():
         type=output_method_type,
         default=DEFAULT_OUTPUT_METHOD,
         dest='output_method'
+    )
+    main_parser.add_argument(
+        '-a', '--analysis',
+        help=f'Set the analysis method (available: {", ".join(analysis_methods.keys())}) (default: {DEFAULT_ANALYSIS_METHOD})',
+        type=analysis_method_type,
+        default=DEFAULT_ANALYSIS_METHOD,
+        dest='analysis_method'
     )
 
     main_args, rest = main_parser.parse_known_args()
@@ -61,7 +76,9 @@ def parse_arguments():
             continue
         second_parser.add_argument(
             f'--{argument.replace("_", "-")}',
-            help=f'{value.help_} (default: {value.default_value if value.def_val_descr is None else value.def_val_descr})',
+            help=f'{value.help_}' 
+               + f' (available: {", ".join(value.available)})' if value.available else ''
+               + ' (default: {value.default_value if value.def_val_descr is None else value.def_val_descr})',
             type=value.type,
             default=value.default_value,
             dest=argument,
