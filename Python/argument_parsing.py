@@ -32,6 +32,34 @@ def analysis_method_type(x):
         )
     return analysis_methods[x]
 
+def add_output_method_arguments(parser, output_method):
+    for argument, value in output_method.default_parameters.items():
+        if value.type == bool:
+            parser.add_argument(
+                f'--{argument.replace("_", "-")}',
+                help=value.help_,
+                action='store_false' if value.default_value else 'store_true',
+                dest=argument
+            )
+            continue
+        parser.add_argument(
+            f'--{argument.replace("_", "-")}',
+            help=f'{value.help_}'
+            + f' (available: {", ".join(value.available)})' if value.available else ''
+            + ' (default: {value.default_value if value.def_val_descr is None else value.def_val_descr})',
+            type=value.type,
+            default=value.default_value,
+            dest=argument,
+            required=value.default_value is None
+        )
+
+def check_invalid_output_method_args(output_method, output_args, parser):
+    err = output_method.check_args(**vars(output_args))
+    if err is not None:
+        print(parser.format_usage(), file=stderr)
+        print(f'{path.basename(argv[0])}: {err}', file=stderr)
+        exit(1)
+
 def parse_arguments():
     main_parser = argparse.ArgumentParser(
         usage='%(prog)s [-h] [-s SIZE] [-m OUTPUT_METHOD] [output method arguments] file'
@@ -65,34 +93,12 @@ def parse_arguments():
         help='Disk image to analyze'
     )
 
-    for argument, value in main_args.output_method.default_parameters.items():
-        if value.type == bool:
-            second_parser.add_argument(
-                f'--{argument.replace("_", "-")}',
-                help=value.help_,
-                action='store_false' if value.default_value else 'store_true',
-                dest=argument
-            )
-            continue
-        second_parser.add_argument(
-            f'--{argument.replace("_", "-")}',
-            help=f'{value.help_}' 
-               + f' (available: {", ".join(value.available)})' if value.available else ''
-               + ' (default: {value.default_value if value.def_val_descr is None else value.def_val_descr})',
-            type=value.type,
-            default=value.default_value,
-            dest=argument,
-            required=value.default_value is None
-        )
+    add_output_method_arguments(second_parser, main_args.output_method)
+
     output_args = second_parser.parse_args(rest)
     main_args.file = output_args.file
     delattr(output_args, 'file')
 
-    err = main_args.output_method.check_args(**vars(output_args))
-    if err is not None:
-        print(second_parser.format_usage(), file=stderr)
-        print(f'{path.basename(argv[0])}: {err}', file=stderr)
-        exit(1)
-
+    check_invalid_output_method_args(main_args.output_method, output_args, second_parser)
         
     return main_args, output_args
