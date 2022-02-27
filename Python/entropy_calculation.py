@@ -65,6 +65,7 @@ class ChiSquare8:
             return 1.0, ResultFlag.RANDOM, None
         return 0.5, ResultFlag.NOT_RANDOM, None 
 
+
 class ChiSquare4:
     def __init__(self, sector_size, rand_lim=0.9999, sus_rand_lim=0.0001):
         self.expected = sector_size / 8
