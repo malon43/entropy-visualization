@@ -84,26 +84,26 @@ def get_methods_help():
 
 def parse_arguments():
     main_parser = argparse.ArgumentParser(
-        usage='%(prog)s [-h] [-s SIZE] [-m OUTPUT_METHOD] [output method arguments] disk_image',
+        usage='%(prog)s [-h] [-s SIZE] [-m OUTPUT_METHOD] [-a ANALYSIS_METHOD] [output method arguments] disk_image',
         epilog=get_methods_help(),
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     main_parser.add_argument(
         '-s', '--size',
-        help=f'Set the sector size (default: {DEFAULT_SECTOR_SIZE})',
+        help=f'set the sector size (default: {DEFAULT_SECTOR_SIZE})',
         type=sector_size_type,
         default=DEFAULT_SECTOR_SIZE
     )
     main_parser.add_argument(
         '-m', '--method',
-        help=f'Set the output method (available: {", ".join(output_methods.keys())}) (default: {DEFAULT_OUTPUT_METHOD})',
+        help=f'set the output method (available: {", ".join(output_methods.keys())}) (default: {DEFAULT_OUTPUT_METHOD})',
         type=output_method_type,
         default=DEFAULT_OUTPUT_METHOD,
         dest='output_method'
     )
     main_parser.add_argument(
         '-a', '--analysis',
-        help=f'Set the analysis method (available: {", ".join(analysis_methods.keys())}) (default: {DEFAULT_ANALYSIS_METHOD})',
+        help=f'set the analysis method (available: {", ".join(analysis_methods.keys())}) (default: {DEFAULT_ANALYSIS_METHOD})',
         type=analysis_method_type,
         default=DEFAULT_ANALYSIS_METHOD,
         dest='analysis_method'
@@ -119,7 +119,7 @@ def parse_arguments():
     second_parser.add_argument(
         'disk_image',
         type=argparse.FileType('rb'),
-        help='Disk image to analyze',
+        help='disk image to analyze',
     )
 
     add_output_method_arguments(second_parser, main_args.output_method)
