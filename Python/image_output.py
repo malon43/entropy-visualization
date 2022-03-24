@@ -121,12 +121,12 @@ class ImageOutput(OutputMethodBase):
             self._draw_legend(fnt)
 
     def output(self, *args):
-        self._image.putpixel(self._next_pos(), self.palette.get(*args))
+        self._image.putpixel(self._coords_from_pos(args[0]), self.palette.get(*args))
         return True
 
-    def _next_pos(self):
+    def _coords_from_pos(self, pos):
         raise NotImplementedError(
-            f'Class {self.__class__.__name__} needs to implement the _next_pos() method'
+            f'Class {self.__class__.__name__} needs to implement the _from_pos() method'
         )
 
     def _get_size(self):
@@ -142,6 +142,7 @@ class ImageOutput(OutputMethodBase):
             self._image.save(self.output_file)
         except ValueError:
             self._image.save(self.output_file, 'PNG')
+        self._image.close()
         self.output_file.close()
         self.err_file.close()
     
@@ -189,7 +190,6 @@ class ScanBlocks(ImageOutput):
     def __init__(self, input_size, **kwargs):
         super().__init__(input_size, **kwargs)
 
-        self._position = 0
         sbsie = self.scan_block_size is Ellipsis
         self.width, self.scan_block_size = self._calc_widths()
         if sbsie and self.scan_block_size == 1:
@@ -218,17 +218,15 @@ class ScanBlocks(ImageOutput):
 
     def _get_size(self):
         w, sbs = self._calc_widths()
-        if self._input_size % (w * sbs) < sbs ** 2:
-            return w, int(self._input_size / (sbs * w)) + ceil((self._input_size % (w * sbs)) / sbs)
+        if self._input_size % (w * sbs) < sbs ** 2:  # if a single unifinshed block remains on the last row
+            return w, (self._input_size // (sbs * w)) * sbs + ceil((self._input_size % (sbs * w)) / sbs)
         return w, ceil(self._input_size / (sbs * w)) * sbs
 
-    def _next_pos(self):
-        out = ((self._position % self.scan_block_size +
-                (self._position // self.scan_block_size ** 2) * self.scan_block_size) % self.width,
-               (self._position // self.scan_block_size) % self.scan_block_size + self._position //
+    def _coords_from_pos(self, pos):
+        return ((pos % self.scan_block_size +
+                (pos // self.scan_block_size ** 2) * self.scan_block_size) % self.width,
+               (pos // self.scan_block_size) % self.scan_block_size + pos //
                (self.scan_block_size * self.width) * self.scan_block_size)
-        self._position += 1
-        return out
     
     @staticmethod
     def check_args(**kwargs):
@@ -271,16 +269,12 @@ class HilbertCurve(ImageOutput):
 
         super().__init__(input_size, **kwargs)
 
-        self._position = 0
-
     def _get_size(self):
         return self.width, self.height
 
-    def _next_pos(self):
-        p = self._d2xy(self.width, self._position % self.width ** 2)
-        out = p[0], p[1] + (self._position // self.width ** 2) * self.width
-        self._position += 1
-        return out
+    def _coords_from_pos(self, pos):
+        p = self._d2xy(self.width, pos % self.width ** 2)
+        return p[0], p[1] + (pos // self.width ** 2) * self.width
 
     def _d2xy(self, n, d):
         '''Calculates point on Hilbert curve from given distance
