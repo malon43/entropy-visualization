@@ -3,6 +3,7 @@ from output_methods import output_methods
 from entropy_calculation import analysis_methods
 from sys import argv, exit, stderr
 from os import path
+from re import sub
 
 DEFAULT_SECTOR_SIZE = 512
 DEFAULT_OUTPUT_METHOD = 'scanning'
@@ -45,8 +46,8 @@ def add_output_method_arguments(parser, output_method):
         parser.add_argument(
             f'--{argument.replace("_", "-")}',
             help=f'{value.help_}'
-            + f' (available: {", ".join(value.available)})' if value.available else ''
-            + ' (default: {value.default_value if value.def_val_descr is None else value.def_val_descr})',
+            + (f' (available: {", ".join(value.available)})' if value.available else '')
+            + f' (default: {value.default_value if value.def_val_descr is None else value.def_val_descr})',
             type=value.type,
             default=value.default_value,
             dest=argument,
@@ -60,9 +61,32 @@ def check_invalid_output_method_args(output_method, output_args, parser):
         print(f'{path.basename(argv[0])}: {err}', file=stderr)
         exit(1)
 
+
+def get_methods_help():
+    helps = []
+    for method_name, method in output_methods.items():
+        parser = argparse.ArgumentParser(usage='', add_help=False)
+        add_output_method_arguments(parser, method)
+        helps.append(
+            f'  {method_name}:\n  ' + 
+            sub(
+                r'^options:\n*',
+                '', 
+                sub(r'^usage: \n*', 
+                    '',
+                    parser.format_help()
+                )
+            )
+            .replace('\n', '\n  ')
+        )
+    return '\n'.join(helps)
+
+
 def parse_arguments():
     main_parser = argparse.ArgumentParser(
-        usage='%(prog)s [-h] [-s SIZE] [-m OUTPUT_METHOD] [output method arguments] file'
+        usage='%(prog)s [-h] [-s SIZE] [-m OUTPUT_METHOD] [output method arguments] disk_image',
+        epilog=get_methods_help(),
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
     main_parser.add_argument(
         '-s', '--size',
@@ -87,17 +111,22 @@ def parse_arguments():
 
     main_args, rest = main_parser.parse_known_args()
     second_parser = argparse.ArgumentParser()
+
+    second_parser.format_help = main_parser.format_help  # If you are reading this, I am so so sorry.
+                                                         # And yes, this does indeed cause second_parser instance to always
+                                                         # call format_help() on the main_parser instance instead of on itself
+
     second_parser.add_argument(
-        'file',
+        'disk_image',
         type=argparse.FileType('rb'),
-        help='Disk image to analyze'
+        help='Disk image to analyze',
     )
 
     add_output_method_arguments(second_parser, main_args.output_method)
 
     output_args = second_parser.parse_args(rest)
-    main_args.file = output_args.file
-    delattr(output_args, 'file')
+    main_args.disk_image = output_args.disk_image
+    delattr(output_args, 'disk_image')
 
     check_invalid_output_method_args(main_args.output_method, output_args, second_parser)
         

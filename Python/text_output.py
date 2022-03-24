@@ -61,7 +61,7 @@ class CSVOutput(TextLineOutput):
     default_parameters = {
         **TextLineOutput.default_parameters,
         'no_header': Parameter(bool, False, 'the resulting csv file will not contain a header'),
-        'separator': Parameter(str, ',', 'sets the provided string as a separator of the csv file')
+        'separator': Parameter(str, ',', 'sets the provided string as a separator of the csv file', '\',\'')
     }
 
     COLUMN_NAMES = [

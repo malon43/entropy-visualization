@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from entropy_calculation import ChiSquare3, ChiSquare4, ChiSquare8, ShannonsEntropy
 from sys import exit
 from argument_parsing import parse_arguments
 from mmap import mmap, ACCESS_READ
@@ -8,7 +7,7 @@ from math import ceil
 
 
 def main(args, output_args):
-    with args.file as f, \
+    with args.disk_image as f, \
             mmap(f.fileno(), length=0, access=ACCESS_READ) as file, \
             args.output_method(ceil(file.size() / args.size), **vars(output_args)) as output:
         iterate(file, args.size, args.analysis_method(args.size), output)
