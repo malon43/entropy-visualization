@@ -2,7 +2,7 @@ from argparse import ArgumentTypeError, FileType
 from enum import IntEnum
 from math import inf
 from sys import stderr, stdout
-from base_output import OutputMethodBase, Parameter, print_check_closed_pipe
+from output_common import OutputMethodBase, Parameter, print_check_closed_pipe
 
 
 def entropy_limit_type(x):
