@@ -1,7 +1,7 @@
 # Disk sector entropy visualization utility
 ## Descriptive Description
 ## Usage
-    python script.py [-h] [-s SIZE] [-m OUTPUT_METHOD] [-a ANALYSIS_METHOD] [output method arguments] disk_image
+    python script.py [-h] [-s SIZE] [-m OUTPUT_METHOD] [-a ANALYSIS_METHOD] [-l SIG_LEVEL | [--rand-lim RAND_LIM --sus-rand-lim SUS_RAND_LIM]] [output method arguments] disk_image
 ### Set sector size to 4KiB
     ./script.py --size 4096 disk.img
 ### Change output method to CSV
