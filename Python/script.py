@@ -10,7 +10,12 @@ def main(args, output_args):
     with args.disk_image as f, \
             mmap(f.fileno(), length=0, access=ACCESS_READ) as file, \
             args.output_method(ceil(file.size() / args.size), **vars(output_args)) as output:
-        iterate(file, args.size, args.analysis_method(args.size), output)
+        iterate(
+            file,
+            args.size,
+            args.analysis_method(args.size, args.rand_lim, args.sus_rand_lim),
+            output
+        )
 
 
 def iterate(file, sector_size, analysis_method, output):

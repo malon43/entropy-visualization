@@ -8,6 +8,9 @@ from re import sub
 DEFAULT_SECTOR_SIZE = 512
 DEFAULT_OUTPUT_METHOD = 'scanning'
 DEFAULT_ANALYSIS_METHOD = 'chi2-4'
+DEFAULT_SIGNIFICANCE_LEVEL = 0.0001
+DEFAULT_RAND_LIMIT = 1 - DEFAULT_SIGNIFICANCE_LEVEL
+DEFAULT_SUS_RAND_LIMIT = DEFAULT_SIGNIFICANCE_LEVEL
 
 
 def sector_size_type(x):
@@ -26,12 +29,23 @@ def output_method_type(x):
         )
     return output_methods[x]
 
+
 def analysis_method_type(x):
     if not x in analysis_methods:
         raise argparse.ArgumentTypeError(
             f'{x} is not a valid analysis method'
         )
     return analysis_methods[x]
+
+
+def significance_type(x):
+    val = float(x)
+    if not (0 <= val <= 1):
+        raise argparse.ArgumentTypeError(
+            f'{x} is not a valid significance value'
+        )
+    return val
+
 
 def add_output_method_arguments(parser, output_method):
     for argument, value in output_method.default_parameters.items():
@@ -53,6 +67,21 @@ def add_output_method_arguments(parser, output_method):
             dest=argument,
             required=value.default_value is None
         )
+
+def check_and_set_sig_levels(args, parser):
+    if args.sig_level is not None:
+        if args.rand_lim is not None or args.sus_rand_lim is not None:
+            print(parser.format_usage(), file=stderr)
+            print(f'cannot use \'--(sus-)rand-lim\' and -l at the simultaneously')
+            exit(1)
+        args.rand_lim = 1 - args.sig_level
+        args.sus_rand_lim = args.sig_level
+        return
+
+    if args.rand_lim is None:
+        args.rand_lim = DEFAULT_RAND_LIMIT
+    if args.sus_rand_lim is None:
+        args.sus_rand_lim = DEFAULT_SUS_RAND_LIMIT
 
 def check_invalid_output_method_args(output_method, output_args, parser):
     err = output_method.check_args(**vars(output_args))
@@ -84,7 +113,7 @@ def get_methods_help():
 
 def parse_arguments():
     main_parser = argparse.ArgumentParser(
-        usage='%(prog)s [-h] [-s SIZE] [-m OUTPUT_METHOD] [-a ANALYSIS_METHOD] [output method arguments] disk_image',
+        usage='%(prog)s[-h][-s SIZE][-m OUTPUT_METHOD][-a ANALYSIS_METHOD][-l SIG_LEVEL|[--rand-lim RAND_LIM --sus-rand-lim SUS_RAND_LIM]][output method arguments] disk_image',
         epilog=get_methods_help(),
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -108,8 +137,29 @@ def parse_arguments():
         default=DEFAULT_ANALYSIS_METHOD,
         dest='analysis_method'
     )
+    main_parser.add_argument(
+        '-l', '--significance-level',
+        help=f'the significance level to use for classification (cannot be used with \'rand-lim\' and \'sus-rand-lim\') (default: {DEFAULT_SIGNIFICANCE_LEVEL})',
+        type=significance_type,
+        dest='sig_level'
+    )
+    main_parser.add_argument(
+        '--rand-lim',
+        help=f'random significance limit (default: {DEFAULT_RAND_LIMIT})',
+        type=significance_type,
+        dest='rand_lim'
+    )
+    main_parser.add_argument(
+        '--sus-rand-lim',
+        help=f'randomness suspiciously high significance limit (default: {DEFAULT_SUS_RAND_LIMIT})',
+        type=significance_type,
+        dest='sus_rand_lim'
+    )
 
     main_args, rest = main_parser.parse_known_args()
+
+    check_and_set_sig_levels(main_args, main_parser)
+
     second_parser = argparse.ArgumentParser()
 
     second_parser.format_help = main_parser.format_help  # If you are reading this, I am so so sorry.
