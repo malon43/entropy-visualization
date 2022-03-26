@@ -1,8 +1,6 @@
 import argparse
 from output_methods import output_methods
 from entropy_calculation import analysis_methods
-from sys import argv, exit, stderr
-from os import path
 from re import sub
 
 DEFAULT_SECTOR_SIZE = 512
@@ -71,9 +69,7 @@ def add_output_method_arguments(parser, output_method):
 def check_and_set_sig_levels(args, parser):
     if args.sig_level is not None:
         if args.rand_lim is not None or args.sus_rand_lim is not None:
-            print(parser.format_usage(), file=stderr)
-            print(f'cannot use \'--(sus-)rand-lim\' and -l at the simultaneously')
-            exit(1)
+            parser.error(f'cannot use \'--(sus-)rand-lim\' and -l at the simultaneously')
         args.rand_lim = 1 - args.sig_level
         args.sus_rand_lim = args.sig_level
         return
@@ -86,9 +82,7 @@ def check_and_set_sig_levels(args, parser):
 def check_invalid_output_method_args(output_method, output_args, parser):
     err = output_method.check_args(**vars(output_args))
     if err is not None:
-        print(parser.format_usage(), file=stderr)
-        print(f'{path.basename(argv[0])}: {err}', file=stderr)
-        exit(1)
+        parser.error(err)
 
 
 def get_methods_help():
@@ -113,7 +107,7 @@ def get_methods_help():
 
 def parse_arguments():
     main_parser = argparse.ArgumentParser(
-        usage='%(prog)s[-h][-s SIZE][-m OUTPUT_METHOD][-a ANALYSIS_METHOD][-l SIG_LEVEL|[--rand-lim RAND_LIM --sus-rand-lim SUS_RAND_LIM]][output method arguments] disk_image',
+        usage='%(prog)s [-h] [-s SIZE] [-m OUTPUT_METHOD] [-a ANALYSIS_METHOD] [-l SIG_LEVEL | [--rand-lim RAND_LIM --sus-rand-lim SUS_RAND_LIM]] [output method arguments] disk_image',
         epilog=get_methods_help(),
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -162,9 +156,9 @@ def parse_arguments():
 
     second_parser = argparse.ArgumentParser()
 
-    second_parser.format_help = main_parser.format_help  # If you are reading this, I am so so sorry.
-                                                         # And yes, this does indeed cause second_parser instance to always
-                                                         # call format_help() on the main_parser instance instead of on itself
+    second_parser.format_usage = main_parser.format_usage  # If you are reading this, I am so so sorry.
+    second_parser.format_help = main_parser.format_help    # And yes, this does indeed cause second_parser instance to always
+                                                           # call format_help()/format_usage() on the main_parser instance instead of on itself
 
     second_parser.add_argument(
         'disk_image',
