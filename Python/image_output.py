@@ -1,4 +1,5 @@
 from argparse import ArgumentTypeError, FileType
+from itertools import chain
 from sys import stderr, stdout
 from output_common import OutputMethodBase, Parameter, print_check_closed_pipe
 from math import ceil, log, sqrt
@@ -93,7 +94,7 @@ class ImageOutput(OutputMethodBase):
     def __init__(self, input_size, **kwargs):
         super().__init__(input_size, **kwargs)
 
-        fnt = ImageFont.load_default()
+        fnt = ImageFont.load_default() #TODO font
         vis_size = self._get_size()
 
         if not self.no_legend and len(self.palette.LEGEND) > 0:
@@ -204,12 +205,11 @@ class ScanBlocks(ImageOutput):
                 raise ValueError('width needs to be a multiple of scan-block-size')
             return self.width, self.scan_block_size
         if self.width is not Ellipsis and self.scan_block_size is Ellipsis:
-            # return the smallest divisor of width larger or equal to preffered block size
-            for i in range(PREFFERED_BLOCK_SIZE, ceil(sqrt(self.width))):
-                if self.width % i == 0:
-                    return self.width, i
-            # otherwise return the largest smaller divisor of width as scan block size
-            for i in range(PREFFERED_BLOCK_SIZE - 1, 0, -1):
+            for i in chain(range(PREFFERED_BLOCK_SIZE, ceil(sqrt(self.width)) + 1), 
+                           range(PREFFERED_BLOCK_SIZE - 1, 0, -1)):
+                # return the smallest divisor of width larger or equal to preffered block size
+                # but smaller or equal to the square root of width
+                # otherwise return the largest smaller divisor of width as scan block size
                 if self.width % i == 0:
                     return self.width, i
         sbs = PREFFERED_BLOCK_SIZE if self.scan_block_size is Ellipsis else self.scan_block_size
