@@ -180,39 +180,39 @@ class ImageOutput(OutputMethodBase):
 
 
 
-# scan-blocks
-class ScanBlocks(ImageOutput):
+# sweeping-blocks
+class SweepingBlocks(ImageOutput):
     default_parameters = {
         **ImageOutput.default_parameters,
         'width': Parameter(int, ..., 'the width of resulting image in pixels', 'automatic square'),
-        'scan_block_size': Parameter(int, ..., 'the size of block groups of the resulting image', 'automatic')
+        'sweeping_block_size': Parameter(int, ..., 'the size of block groups of the resulting image', 'automatic')
     }
 
     def __init__(self, input_size, **kwargs):
         super().__init__(input_size, **kwargs)
 
-        sbsie = self.scan_block_size is Ellipsis
-        self.width, self.scan_block_size = self._calc_widths()
-        if sbsie and self.scan_block_size == 1:
-            print_check_closed_pipe(f'warn: sensible scan block size for width {self.width}'
-                                    ' could not be selected, defaulting to scanning.', file=stderr)
+        sbsie = self.sweeping_block_size is Ellipsis
+        self.width, self.sweeping_block_size = self._calc_widths()
+        if sbsie and self.sweeping_block_size == 1:
+            print_check_closed_pipe(f'warn: sensible sweeping block size for width {self.width}'
+                                    ' could not be selected, defaulting to sweeping.', file=stderr)
 
     def _calc_widths(self):
         PREFFERED_BLOCK_SIZE = 32
 
-        if self.width is not Ellipsis and self.scan_block_size is not Ellipsis:
-            if self.width % self.scan_block_size != 0:
-                raise ValueError('width needs to be a multiple of scan-block-size')
-            return self.width, self.scan_block_size
-        if self.width is not Ellipsis and self.scan_block_size is Ellipsis:
+        if self.width is not Ellipsis and self.sweeping_block_size is not Ellipsis:
+            if self.width % self.sweeping_block_size != 0:
+                raise ValueError('width needs to be a multiple of sweeping-block-size')
+            return self.width, self.sweeping_block_size
+        if self.width is not Ellipsis and self.sweeping_block_size is Ellipsis:
             for i in chain(range(PREFFERED_BLOCK_SIZE, ceil(sqrt(self.width)) + 1), 
                            range(PREFFERED_BLOCK_SIZE - 1, 0, -1)):
                 # return the smallest divisor of width larger or equal to preffered block size
                 # but smaller or equal to the square root of width
-                # otherwise return the largest smaller divisor of width as scan block size
+                # otherwise return the largest smaller divisor of width as sweeping block size
                 if self.width % i == 0:
                     return self.width, i
-        sbs = PREFFERED_BLOCK_SIZE if self.scan_block_size is Ellipsis else self.scan_block_size
+        sbs = PREFFERED_BLOCK_SIZE if self.sweeping_block_size is Ellipsis else self.sweeping_block_size
         return ceil(ceil(sqrt(self._input_size)) / sbs) * sbs, sbs
         
 
@@ -223,30 +223,30 @@ class ScanBlocks(ImageOutput):
         return w, ceil(self._input_size / (sbs * w)) * sbs
 
     def _coords_from_pos(self, pos):
-        return ((pos % self.scan_block_size +
-                (pos // self.scan_block_size ** 2) * self.scan_block_size) % self.width,
-               (pos // self.scan_block_size) % self.scan_block_size + pos //
-               (self.scan_block_size * self.width) * self.scan_block_size)
+        return ((pos % self.sweeping_block_size +
+                (pos // self.sweeping_block_size ** 2) * self.sweeping_block_size) % self.width,
+               (pos // self.sweeping_block_size) % self.sweeping_block_size + pos //
+               (self.sweeping_block_size * self.width) * self.sweeping_block_size)
     
     @staticmethod
     def check_args(**kwargs):
-        if 'width' in kwargs and 'scan_block_size' in kwargs \
+        if 'width' in kwargs and 'sweeping_block_size' in kwargs \
              and kwargs['width'] is not Ellipsis \
-             and kwargs['scan_block_size'] is not Ellipsis \
-             and kwargs['width'] % kwargs['scan_block_size'] != 0:
-            return 'width needs to be a multiple of scan-block-size'
+             and kwargs['sweeping_block_size'] is not Ellipsis \
+             and kwargs['width'] % kwargs['sweeping_block_size'] != 0:
+            return 'width needs to be a multiple of sweeping-block-size'
         return None
 
-# scanning
-class Scanning(ScanBlocks):
+# sweeping
+class Sweeping(SweepingBlocks):
     default_parameters = {
         **ImageOutput.default_parameters,
         'width': Parameter(int, ..., 'the width of the resulting image in pixels', 'square')
     }
 
     def __init__(self, input_size, **kwargs):
-        # scanning is equivalent to scan-blocks with the block size of 1
-        self.scan_block_size = 1
+        # sweeping is equivalent to sweeping-blocks with the block size of 1
+        self.sweeping_block_size = 1
         super().__init__(input_size, **kwargs)
 
 

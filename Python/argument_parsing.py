@@ -4,7 +4,7 @@ from entropy_calculation import analysis_methods
 from re import sub
 
 DEFAULT_SECTOR_SIZE = 512
-DEFAULT_OUTPUT_METHOD = 'scanning'
+DEFAULT_OUTPUT_METHOD = 'sweeping'
 DEFAULT_ANALYSIS_METHOD = 'chi2-4'
 DEFAULT_SIGNIFICANCE_LEVEL = 0.0001
 DEFAULT_RAND_LIMIT = 1 - DEFAULT_SIGNIFICANCE_LEVEL

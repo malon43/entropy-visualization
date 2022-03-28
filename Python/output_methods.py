@@ -1,10 +1,10 @@
-from image_output import HilbertCurve, ScanBlocks, Scanning
+from image_output import HilbertCurve, SweepingBlocks, Sweeping
 from text_output import CSVOutput, SampleOutput
 
 output_methods: dict = {
     'sample-output': SampleOutput,
     'csv': CSVOutput,
-    'scanning': Scanning,
-    'scan-blocks': ScanBlocks,
+    'sweeping': Sweeping,
+    'sweeping-blocks': SweepingBlocks,
     'hilbert-curve': HilbertCurve
 }

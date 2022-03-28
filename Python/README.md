@@ -16,7 +16,7 @@ If the expected count of each group ($\frac{\lfloor\frac{\text{sector size * 8}}
 - `shannon` calculates the [normalized entropy](https://en.wikipedia.org/wiki/Entropy_(information_theory)#Efficiency_(normalized_entropy)) of the distribution of byte values in the sector.
 
 ### Output method arguments
-#### scanning
+#### sweeping
 Visualizes image as a png image.
 Each sector as a pixel order from left to right.
 - `--output-file out.png`
@@ -25,18 +25,18 @@ will set the output file out out.png
 will set the resulting image width to 2048 pixels
 - `--palette asalor` will match the color palette of the result to the palette used [here](https://asalor.blogspot.com/2011/08/trim-dm-crypt-problems.html)
 
-#### scan-blocks
-Same as **scanning**, but the sectors are grouped in blocks of defined size.
+#### sweeping-blocks
+Same as **sweeping**, but the sectors are grouped in blocks of defined size.
 - `--output-file out.png`
 will set the output file out out.png
-- `--scan-block-size 64`
+- `--sweeping-block-size 64`
 will set the size of the side of the blocks to 64 pixels
 - `--width 2048`
-will set the resulting image width to 2048 pixels, needs to be divisible by scan-block-size
+will set the resulting image width to 2048 pixels, needs to be divisible by sweeping-block-size
 - `--palette asalor` will match the color palette of the result to the palette used [here](https://asalor.blogspot.com/2011/08/trim-dm-crypt-problems.html)
 
 #### hilbert-curve
-Same as **scanning**, but the order of sectors follows the [Hilbert Curve](https://en.wikipedia.org/wiki/Hilbert_curve)
+Same as **sweeping**, but the order of sectors follows the [Hilbert Curve](https://en.wikipedia.org/wiki/Hilbert_curve)
 
 - `--output-file out.png`
 will set the output file out out.png
@@ -74,11 +74,11 @@ omits every sector the entropy of which is higher than 0.9
 It is possible to produce output using one of the output methods from generated csv file using `from_csv.py`.
 ### Usage
     from_csv.py [-h] [-d DELIMITER] method file [output method arguments]
-available methods are `sample-output`, `csv`, `scanning`, `scan-blocks`, `hilbert-curve`
+available methods are `sample-output`, `csv`, `sweeping`, `sweeping-blocks`, `hilbert-curve`
 #### Set delimiter to '|'
     from_csv.py -d '|' hilbert-curve disk.csv
 #### set width of resulting image to 2048 pixels
-    from_csv.py scanning disk.csv --width 2048
+    from_csv.py sweeping disk.csv --width 2048
 
 ## TODO
 - More descriptive description
