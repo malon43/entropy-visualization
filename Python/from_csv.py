@@ -33,15 +33,27 @@ def parse_arguments():
 
     return main_args, output_args
 
+
+def set_to_header_end_position(f):
+    p = f.tell()
+    line = f.readline()
+    if line[0].isdigit():
+        f.seek(p)
+
+
+def get_number_of_lines(f):
+    p = f.tell()
+    for line_number, _ in enumerate(f):
+        pass
+    f.seek(p)
+    return line_number + 1
+    
+
 def main(args, output_args):
     with args.file as f:
-        lines = f.readlines()
-        header = not lines[0][0].isdigit()
-        with args.method(len(lines) - header, **vars(output_args)) as output:
-            for row in csv.reader(lines, delimiter=args.delimiter):
-                if header:
-                    header = False
-                    continue
+        set_to_header_end_position(f)
+        with args.method(get_number_of_lines(f), **vars(output_args)) as output:
+            for row in csv.reader(f, delimiter=args.delimiter):
                 ret = output.output(
                     int(row[0]),
                     int(row[1]),
