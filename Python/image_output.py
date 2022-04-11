@@ -241,7 +241,7 @@ class SweepingBlocks(ImageOutput):
 class Sweeping(SweepingBlocks):
     default_parameters = {
         **ImageOutput.default_parameters,
-        'width': Parameter(int, ..., 'the width of the resulting image in pixels', 'square')
+        'width': Parameter(int, ..., 'the width of the resulting image in pixels', 'automatic square')
     }
 
     def __init__(self, input_size, **kwargs):
