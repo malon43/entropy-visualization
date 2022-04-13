@@ -70,6 +70,13 @@ def palette_type(x):
     return palettes[x]
 
 
+def font_type(x):
+    try:
+        ImageFont.truetype(x)
+    except OSError:
+        raise ArgumentTypeError(f'{x} is not a valid font')
+    return x
+
 
 def luminance_test_black_white(bg_color):
     '''Based on W3 guidelines: https://www.w3.org/TR/WCAG20/#relativeluminancedef'''
@@ -88,16 +95,23 @@ class ImageOutput(OutputMethodBase):
         'no_legend': Parameter(bool, False, 'resulting image will not contain a legend'),
         'background': Parameter(hex_color_type, (255, 255, 255), 'hex code of background color', 'white'),
         'text_color': Parameter(hex_color_type, ..., 'hex code of font color of the legend', 'determined automatically'),
-        'palette': Parameter(palette_type, 'sample', 'color palette to use', available=list(palettes.keys()))
+        'palette': Parameter(palette_type, 'sample', 'color palette to use', available=list(palettes.keys())),
+        'font': Parameter(font_type, 'FreeMono.otf', 'font to use for legend'),
+        'font_size': Parameter(int, ..., 'font size to use for legend in pixels', 'automatic')
     }
 
     def __init__(self, input_size, **kwargs):
         super().__init__(input_size, **kwargs)
 
-        fnt = ImageFont.load_default() #TODO font
         vis_size = self._get_size()
 
         if not self.no_legend and len(self.palette.LEGEND) > 0:
+            if self.font_size is Ellipsis:
+                self.font_size = max(vis_size[1] // len(self.palette.LEGEND) // 4, 16)
+            try:
+                fnt = ImageFont.truetype(self.font, size=self.font_size)
+            except OSError:
+                fnt = ImageFont.load_default()
             legend_size = self._get_legend_size(fnt)
             total_size = (
                 vis_size[0] + legend_size[0],
@@ -151,7 +165,7 @@ class ImageOutput(OutputMethodBase):
         if len(self.palette.LEGEND) < 1:
             raise ValueError('Legend needs to have at least one element')
 
-        square_size = fnt.getsize('')[1]
+        square_size = fnt.getsize('a')[1]
         spacing = square_size // 2
         sizes = [fnt.getsize(ll[1]) for ll in self.palette.LEGEND]
         width = spacing * 3 + square_size + max(x[0] for x in sizes)
@@ -163,7 +177,7 @@ class ImageOutput(OutputMethodBase):
         d = ImageDraw.Draw(self._image)
         lw, lh = self._get_legend_size(fnt)
         outline_color = luminance_test_black_white(self.background)
-        square_size = fnt.getsize('')[1]
+        square_size = fnt.getsize('a')[1]
         spacing = square_size // 2
         square_pos_w = self._image.size[0] - lw + spacing
         text_pos_w = square_pos_w + square_size + spacing
