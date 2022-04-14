@@ -106,7 +106,7 @@ class ImageOutput(OutputMethodBase):
         'palette': Parameter(palette_type, 'sample', 'color palette to use', available=list(palettes.keys())),
         'font': Parameter(font_type, 'LiberationMono-Regular', 'font to use for legend'),
         'font_size': Parameter(font_size_type, ..., 'font size to use for legend in pixels', 'automatic'),
-        'font_color': Parameter(hex_color_type, ..., 'hex code of font color of the legend', 'determined automatically')
+        'font_color': Parameter(hex_color_type, ..., 'hex code of font color of the legend', 'automatic')
     }
 
     def __init__(self, input_size, **kwargs):
