@@ -71,11 +71,20 @@ def palette_type(x):
 
 
 def font_type(x):
+    if x.strip() == '-':
+        return x.strip()
     try:
         ImageFont.truetype(x)
     except OSError:
-        raise ArgumentTypeError(f'{x} is not a valid font')
+        raise ArgumentTypeError(f'font {x} could not be found, please provide another font or use \'--font -\' for a fallback font')
     return x
+
+
+def font_size_type(x):
+    val = int(x)
+    if val < 0:
+        raise ArgumentTypeError(f'{x} is not a valid font size')
+    return val
 
 
 def luminance_test_black_white(bg_color):
@@ -94,10 +103,10 @@ class ImageOutput(OutputMethodBase):
         'err_file': Parameter(FileType('w'), stderr, 'error output file', 'stderr'),
         'no_legend': Parameter(bool, False, 'resulting image will not contain a legend'),
         'background': Parameter(hex_color_type, (255, 255, 255), 'hex code of background color', 'white'),
-        'text_color': Parameter(hex_color_type, ..., 'hex code of font color of the legend', 'determined automatically'),
         'palette': Parameter(palette_type, 'sample', 'color palette to use', available=list(palettes.keys())),
-        'font': Parameter(font_type, 'FreeMono.otf', 'font to use for legend'),
-        'font_size': Parameter(int, ..., 'font size to use for legend in pixels', 'automatic')
+        'font': Parameter(font_type, 'LiberationMono-Regular', 'font to use for legend'),
+        'font_size': Parameter(font_size_type, ..., 'font size to use for legend in pixels', 'automatic'),
+        'font_color': Parameter(hex_color_type, ..., 'hex code of font color of the legend', 'determined automatically')
     }
 
     def __init__(self, input_size, **kwargs):
@@ -107,7 +116,7 @@ class ImageOutput(OutputMethodBase):
 
         if not self.no_legend and len(self.palette.LEGEND) > 0:
             if self.font_size is Ellipsis:
-                self.font_size = max(vis_size[1] // len(self.palette.LEGEND) // 4, 16)
+                self.font_size = max(vis_size[1] // len(self.palette.LEGEND) // 8, 16)
             try:
                 fnt = ImageFont.truetype(self.font, size=self.font_size)
             except OSError:
@@ -120,12 +129,12 @@ class ImageOutput(OutputMethodBase):
         else:
             total_size = vis_size
 
-        if self.text_color is Ellipsis:
-            self.text_color = luminance_test_black_white(self.background)
+        if self.font_color is Ellipsis:
+            self.font_color = luminance_test_black_white(self.background)
 
         self._rgba = self.palette.NEEDS_ALPHA \
             or len(self.background) == 4 \
-            or len(self.text_color) == 4
+            or len(self.font_color) == 4
 
         self._image = Image.new(
             'RGBA' if self._rgba else 'RGB',
@@ -167,9 +176,8 @@ class ImageOutput(OutputMethodBase):
 
         square_size = fnt.getsize('a')[1]
         spacing = square_size // 2
-        sizes = [fnt.getsize(ll[1]) for ll in self.palette.LEGEND]
-        width = spacing * 3 + square_size + max(x[0] for x in sizes)
-        height = sum(x[1] for x in sizes) + (len(sizes) + 1) * spacing
+        width = spacing * 3 + square_size + max(fnt.getsize(x[1])[0] for x in self.palette.LEGEND)
+        height = len(self.palette.LEGEND) * square_size + (len(self.palette.LEGEND) + 1) * spacing
 
         return width, height
 
@@ -178,19 +186,20 @@ class ImageOutput(OutputMethodBase):
         lw, lh = self._get_legend_size(fnt)
         outline_color = luminance_test_black_white(self.background)
         square_size = fnt.getsize('a')[1]
+        square_border_width = max(square_size // 16, 1)
         spacing = square_size // 2
         square_pos_w = self._image.size[0] - lw + spacing
         text_pos_w = square_pos_w + square_size + spacing
         text_pos_h = self._image.size[1] // 2 - lh // 2 + spacing
 
         for color, desc in self.palette.LEGEND:
-            d.text((text_pos_w, text_pos_h), desc, font=fnt, fill=self.text_color)
+            d.text((text_pos_w, text_pos_h), desc, font=fnt, fill=self.font_color)
             d.rectangle(((square_pos_w, text_pos_h),
                         (square_pos_w + square_size, text_pos_h + square_size)),
                         fill=color,
                         outline=outline_color,
-                        width=1)
-            text_pos_h += fnt.getsize(desc)[1] + spacing
+                        width=square_border_width)
+            text_pos_h += square_size + spacing
 
 
 
