@@ -1,36 +1,64 @@
+from random import random
 from entropy_calculation import ResultFlag
 
 def _linear_rgb_color_interpolation(color1, color2, val, min_val=0, max_val=1):
     return tuple(c1 + round((c1 - c2) / (min_val - max_val) * (val - min_val)) for c1, c2 in zip(color1, color2))
 
-class SamplePalette:
-    NEEDS_ALPHA = False
-    LEGEND = [
-        ((0, 0, 255), 'Byte pattern (x00)'),
-        ((0, 255, 0), 'Byte pattern (xff)'),
-        ((0, 64, 0), 'Byte pattern (x40)'),
-        ((255, 0, 255), 'Random'),
-        ((127, 0, 127), 'Not random'),
-        ((255, 0, 0), 'Too random')
-    ]
 
-    @staticmethod
-    def get(sector_number,
-            sector_offset,
-            sector_randomness,
-            result_flag,
-            result_arg):
-        if result_flag == ResultFlag.SINGLE_BYTE_PATTERN:
-            return (0, result_arg, 0) if result_arg != 0 else (0, 0, 255)
-        if result_flag == ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH:
-            return (255, 0, 0)
-        if result_flag == ResultFlag.RANDOM:
-            return (255, 0, 255)
-        if result_flag == ResultFlag.NOT_RANDOM:
-            return (127, 0, 127)
-        if result_flag == ResultFlag.NONE:
-            return (int(255 * sector_randomness), 0, int(255 * sector_randomness))
-        raise ValueError(f'invalid result_flag value: \'{result_flag}\'')
+def _get_simple_palette(
+        random,
+        not_random,
+        too_random,
+        zero_pattern,
+        pattern,
+        low_pattern=None,
+        absolute_not_random_at=0.0):
+    abs_not_random = _linear_rgb_color_interpolation(not_random, random, absolute_not_random_at)
+
+    if low_pattern is None:
+        get_pattern_color = lambda _: pattern
+    else:
+        get_pattern_color = lambda p: _linear_rgb_color_interpolation(low_pattern, pattern, p, 1, 255)
+    
+    class SimplePalette:
+        NEEDS_ALPHA = any(c is None or len(c) > 3 for c in [zero_pattern, pattern, low_pattern,
+                                                            random, not_random, too_random])
+        LEGEND = [
+            (zero_pattern, 'Byte pattern (x00)'),
+            *(
+                [
+                    (pattern, 'Other byte pattern')
+                ] if low_pattern is None else [
+                    (pattern, 'Byte pattern (xff)'),
+                    (get_pattern_color(64), 'Byte pattern (x40)')
+                ]
+            ),
+            (random, 'Random'),
+            (abs_not_random, 'Not random'),
+            (too_random, 'Too random')
+        ]
+
+        @staticmethod
+        def get(sector_number,
+                sector_offset,
+                sector_randomness,
+                result_flag,
+                result_arg):
+            if result_flag == ResultFlag.SINGLE_BYTE_PATTERN:
+                if result_arg == 0:
+                    return zero_pattern
+                return get_pattern_color(result_arg)
+            if result_flag == ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH:
+                return too_random
+            if result_flag == ResultFlag.RANDOM:
+                return random
+            if result_flag == ResultFlag.NOT_RANDOM:
+                return abs_not_random
+            if result_flag == ResultFlag.NONE:
+                return _linear_rgb_color_interpolation(not_random, random, sector_randomness)
+            raise ValueError(f'invalid result_flag value: \'{result_flag}\'')
+
+    return SimplePalette
 
 
 class AsalorPalette:
@@ -52,7 +80,7 @@ class AsalorPalette:
             result_flag, 
             result_arg):
         if result_flag == ResultFlag.SINGLE_BYTE_PATTERN:
-            return (192, 192, 192) if result_arg != 0 else (93, 132, 41)
+            return (93, 132, 41) if result_arg == 0 else (192, 192, 192)
         if result_flag in (ResultFlag.RANDOM, ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH):
             return (0, 0, 0)
         if result_flag == ResultFlag.NOT_RANDOM:
@@ -62,43 +90,30 @@ class AsalorPalette:
         raise ValueError(f'invalid result_flag value: \'{result_flag}\'')
 
 
-class RGPalette:
-    '''Red-Green Palette
-    Used colors from colorbrewer2.org'''
-    
-    NEEDS_ALPHA = False
-    LEGEND = [
-        ((55, 126, 184), 'Byte pattern (x00)'),
-        ((255, 255, 51), 'Byte pattern (xff)'),
-        ((63, 63, 13), 'Byte pattern (x40)'),
-        ((77, 175, 74), 'Random'),
-        ((228, 26, 28), 'Not random'),
-        ((152, 78, 163), 'Too random')
-    ]
-
-    @staticmethod
-    def get(sector_number,
-            sector_offset,
-            sector_randomness,
-            result_flag,
-            result_arg):
-        if result_flag == ResultFlag.SINGLE_BYTE_PATTERN:
-            if result_arg == 0:
-                return (55, 126, 184)
-            return _linear_rgb_color_interpolation((0, 0, 0), (255, 255, 51), result_arg, 1, 255)
-        if result_flag == ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH:
-            return (152, 78, 163)
-        if result_flag == ResultFlag.RANDOM:
-            return (77, 175, 74)
-        if result_flag == ResultFlag.NOT_RANDOM:
-            return (228, 26, 28)
-        if result_flag == ResultFlag.NONE:
-            return _linear_rgb_color_interpolation((228, 26, 28), (77, 175, 74), sector_randomness)
-        raise ValueError(f'invalid result_flag value: \'{result_flag}\'')
-
-
 palettes = {
-    'sample': SamplePalette,
     'asalor': AsalorPalette,
-    'rg': RGPalette
+    'sample': _get_simple_palette(
+        random =       (255,   0, 255),
+        not_random =   (  0,   0,   0),
+        too_random =   (255,   0,   0),
+        zero_pattern = (  0,   0, 255),
+        pattern =      (  0, 255,   0),
+        low_pattern =  (  0,   0,   0),
+        absolute_not_random_at=0.5
+    ),
+    'rg': _get_simple_palette(  # Used colors from colorbrewer2.org
+        random =       ( 77, 175,  74),
+        not_random =   (228,  26,  28), 
+        too_random =   (152,  78, 163),
+        zero_pattern = ( 55, 126, 184), 
+        pattern =      (255, 255,  51), 
+        low_pattern =  (  0,   0,   0)
+    ),
+    'photocopy-safe': _get_simple_palette(  # Used colors from colorbrewer2.org
+        random =       ( 43, 131, 186), 
+        not_random =   (215,  25,  28),
+        too_random =   (253, 174,  97),
+        zero_pattern = (171, 221, 164), 
+        pattern =      (255, 255, 191)
+    )
 }
