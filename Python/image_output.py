@@ -103,7 +103,7 @@ class ImageOutput(OutputMethodBase):
         'err_file': Parameter(FileType('w'), stderr, 'error output file', 'stderr'),
         'no_legend': Parameter(bool, False, 'resulting image will not contain a legend'),
         'background': Parameter(hex_color_type, (255, 255, 255), 'hex code of background color', 'white'),
-        'palette': Parameter(palette_type, 'sample', 'color palette to use', available=list(palettes.keys())),
+        'palette': Parameter(palette_type, 'photocopy-safe', 'color palette to use', available=list(palettes.keys())),
         'font': Parameter(font_type, 'LiberationMono-Regular', 'font to use for legend'),
         'font_size': Parameter(font_size_type, ..., 'font size to use for legend in pixels', 'automatic'),
         'font_color': Parameter(hex_color_type, ..., 'hex code of font color of the legend', 'automatic')
