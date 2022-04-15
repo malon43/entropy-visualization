@@ -1,4 +1,3 @@
-from random import random
 from entropy_calculation import ResultFlag
 
 def _linear_rgb_color_interpolation(color1, color2, val, min_val=0, max_val=1):
