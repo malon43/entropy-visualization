@@ -221,21 +221,21 @@ class SweepingBlocks(ImageOutput):
                                     ' could not be selected, defaulting to sweeping.', file=stderr)
 
     def _calc_widths(self):
-        preffered_block_size = max(16, 2 ** (int(sqrt(self._input_size)).bit_length() - 6))
+        PREFFERED_BLOCK_SIZE = max(16, 2 ** (int(sqrt(self._input_size)).bit_length() - 6))
 
         if self.width is not Ellipsis and self.sweeping_block_size is not Ellipsis:
             if self.width % self.sweeping_block_size != 0:
                 raise ValueError('width needs to be a multiple of sweeping-block-size')
             return self.width, self.sweeping_block_size
         if self.width is not Ellipsis and self.sweeping_block_size is Ellipsis:
-            for i in chain(range(preffered_block_size, ceil(sqrt(self.width)) + 1), 
-                           range(preffered_block_size - 1, 0, -1)):
+            for i in chain(range(PREFFERED_BLOCK_SIZE, ceil(sqrt(self.width)) + 1), 
+                           range(PREFFERED_BLOCK_SIZE - 1, 0, -1)):
                 # return the smallest divisor of width larger or equal to preffered block size
                 # but smaller or equal to the square root of width
                 # otherwise return the largest smaller divisor of width as sweeping block size
                 if self.width % i == 0:
                     return self.width, i
-        sbs = preffered_block_size if self.sweeping_block_size is Ellipsis else self.sweeping_block_size
+        sbs = PREFFERED_BLOCK_SIZE if self.sweeping_block_size is Ellipsis else self.sweeping_block_size
         return ceil(ceil(sqrt(self._input_size)) / sbs) * sbs, sbs
         
 
