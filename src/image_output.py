@@ -221,7 +221,7 @@ class SweepingBlocks(ImageOutput):
                                     ' could not be selected, defaulting to sweeping.', file=stderr)
 
     def _calc_widths(self):
-        preffered_block_size = max(16, 2 ** (int(sqrt(self._input_size)).bit_length() - 6))
+        preffered_block_size = max(16, 2 ** (int(sqrt(self._input_size)).bit_length() - 5))
 
         if self.width is not Ellipsis and self.sweeping_block_size is not Ellipsis:
             if self.width % self.sweeping_block_size != 0:

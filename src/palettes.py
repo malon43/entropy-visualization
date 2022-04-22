@@ -34,7 +34,7 @@ def _get_simple_palette(
             ),
             (random, 'Random'),
             (abs_not_random, 'Not random'),
-            (too_random, 'Too random')
+            (too_random, 'Perfect random')
         ]
 
         @staticmethod
