@@ -116,7 +116,7 @@ class ImageOutput(OutputMethodBase):
 
         if not self.no_legend and len(self.palette.LEGEND) > 0:
             if self.font_size is Ellipsis:
-                self.font_size = max(vis_size[1] // len(self.palette.LEGEND) // 8, 16)
+                self.font_size = max(vis_size[1] // len(self.palette.LEGEND) // 4, 16)
             try:
                 fnt = ImageFont.truetype(self.font, size=self.font_size)
             except OSError:
