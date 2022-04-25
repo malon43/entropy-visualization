@@ -6,9 +6,9 @@ from re import sub
 DEFAULT_SECTOR_SIZE = 512
 DEFAULT_OUTPUT_METHOD = 'sweeping'
 DEFAULT_ANALYSIS_METHOD = 'chi2-4'
-DEFAULT_SIGNIFICANCE_LEVEL = 0.0001
-DEFAULT_RAND_LIMIT = 1 - DEFAULT_SIGNIFICANCE_LEVEL
-DEFAULT_SUS_RAND_LIMIT = DEFAULT_SIGNIFICANCE_LEVEL
+DEFAULT_SIGNIFICANCE_LEVEL = 0.0002
+DEFAULT_RAND_LIMIT = 1 - DEFAULT_SIGNIFICANCE_LEVEL / 2
+DEFAULT_SUS_RAND_LIMIT = DEFAULT_SIGNIFICANCE_LEVEL / 2
 
 
 def sector_size_type(x):
@@ -70,8 +70,8 @@ def check_and_set_sig_levels(args, parser):
     if args.sig_level is not None:
         if args.rand_lim is not None or args.sus_rand_lim is not None:
             parser.error(f'cannot use \'--(sus-)rand-lim\' and -l at the simultaneously')
-        args.rand_lim = 1 - args.sig_level
-        args.sus_rand_lim = args.sig_level
+        args.rand_lim = 1 - args.sig_level / 2
+        args.sus_rand_lim = args.sig_level / 2
         return
 
     if args.rand_lim is None:
