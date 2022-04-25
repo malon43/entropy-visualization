@@ -1,4 +1,4 @@
-from entropy_calculation import ResultFlag
+from analysis import ResultFlag
 
 def _linear_rgb_color_interpolation(color1, color2, val, min_val=0, max_val=1):
     return tuple(c1 + round((c1 - c2) / (min_val - max_val) * (val - min_val)) for c1, c2 in zip(color1, color2))

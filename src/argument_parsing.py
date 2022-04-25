@@ -1,6 +1,6 @@
 import argparse
 from output_methods import output_methods
-from entropy_calculation import analysis_methods
+from analysis import analysis_methods
 from re import sub
 
 DEFAULT_SECTOR_SIZE = 512

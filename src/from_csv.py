@@ -4,7 +4,7 @@ import argparse
 
 from output_methods import output_methods
 from argument_parsing import add_output_method_arguments, check_invalid_output_method_args, output_method_type
-from entropy_calculation import ResultFlag
+from analysis import ResultFlag
 import csv
 
 def parse_arguments():
