@@ -80,9 +80,9 @@ class AsalorPalette:
             result_arg):
         if result_flag == ResultFlag.SINGLE_BYTE_PATTERN:
             return (93, 132, 41) if result_arg == 0 else (192, 192, 192)
-        if result_flag in (ResultFlag.RANDOM, ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH):
+        if result_flag in ResultFlag.RANDOM:
             return (0, 0, 0)
-        if result_flag == ResultFlag.NOT_RANDOM:
+        if result_flag in (ResultFlag.NOT_RANDOM, ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH):
             return (186, 0, 70)
         if result_flag == ResultFlag.NONE:
             return _linear_rgb_color_interpolation((186, 0, 70), (0, 0, 0), sector_randomness)
