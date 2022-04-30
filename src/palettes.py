@@ -1,5 +1,6 @@
 from analysis import ResultFlag
 
+
 def _linear_rgb_color_interpolation(color1, color2, val, min_val=0, max_val=1):
     return tuple(c1 + round((c1 - c2) / (min_val - max_val) * (val - min_val)) for c1, c2 in zip(color1, color2))
 
@@ -18,7 +19,7 @@ def _get_simple_palette(
         get_pattern_color = lambda _: pattern
     else:
         get_pattern_color = lambda p: _linear_rgb_color_interpolation(low_pattern, pattern, p, 1, 255)
-    
+
     class SimplePalette:
         NEEDS_ALPHA = any(c is None or len(c) > 3 for c in [zero_pattern, pattern, low_pattern,
                                                             random, not_random, too_random])
@@ -61,8 +62,8 @@ def _get_simple_palette(
 
 
 class AsalorPalette:
-    '''Color pallete used in 
-    https://asalor.blogspot.com/2011/08/trim-dm-crypt-problems.html'''
+    """Color palette from
+    https://asalor.blogspot.com/2011/08/trim-dm-crypt-problems.html"""
 
     NEEDS_ALPHA = False
     LEGEND = [
@@ -73,14 +74,14 @@ class AsalorPalette:
     ]
 
     @staticmethod
-    def get(sector_number, 
-            sector_offset, 
-            sector_randomness, 
-            result_flag, 
+    def get(sector_number,
+            sector_offset,
+            sector_randomness,
+            result_flag,
             result_arg):
         if result_flag == ResultFlag.SINGLE_BYTE_PATTERN:
             return (93, 132, 41) if result_arg == 0 else (192, 192, 192)
-        if result_flag in ResultFlag.RANDOM:
+        if result_flag == ResultFlag.RANDOM:
             return (0, 0, 0)
         if result_flag in (ResultFlag.NOT_RANDOM, ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH):
             return (186, 0, 70)
@@ -109,10 +110,10 @@ palettes = {
         low_pattern =  (  0,   0,   0)
     ),
     'photocopy-safe': _get_simple_palette(  # Used colors from colorbrewer2.org
-        random =       ( 43, 131, 186), 
+        random =       ( 43, 131, 186),
         not_random =   (215,  25,  28),
         too_random =   (253, 174,  97),
-        zero_pattern = (171, 221, 164), 
+        zero_pattern = (171, 221, 164),
         pattern =      (255, 255, 191)
     )
 }

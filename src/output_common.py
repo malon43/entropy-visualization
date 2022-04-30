@@ -34,7 +34,7 @@ class OutputMethodBase:
 
     @staticmethod
     def check_args(**kwargs):
-        '''Return None if args are correct otherwise return error message'''
+        """Return None if args are correct otherwise return error message"""
         return None
 
     def error(self, message):
@@ -49,8 +49,8 @@ class OutputMethodBase:
 
 
 def print_check_closed_pipe(*args, **kwargs):
-    '''Returns False on BrokenPipeError,
-       otherwise lets error through or returns True'''
+    """Returns False on BrokenPipeError,
+       otherwise lets error through or returns True"""
     try:
         print(*args, **kwargs)
         return True

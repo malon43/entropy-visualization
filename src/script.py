@@ -40,6 +40,6 @@ def iterate(file, sector_size, analysis_method, output):
 
 
 if __name__ == '__main__':
-    args, output_args = parse_arguments()
-    main(args, output_args)
+    arguments, output_arguments = parse_arguments()
+    main(arguments, output_arguments)
     exit(0)

@@ -24,12 +24,12 @@ class ShannonsEntropy:
         self.sector_size = sector_size
 
     def calc(self, buf):
-        ''' Calculates and returns sample entropy on byte level for
+        """ Calculates and returns sample entropy on byte level for
         the argument and single byte pattern if present or None.
 
-        This code has been adapted from 
+        This code has been adapted from
         https://gitlab.com/cryptsetup/cryptsetup/-/blob/master/misc/keyslot_checker/chk_luks_keyslots.c#L81
-        '''
+        """
         freq = Counter(buf)
         if len(freq) == 1:
             return 0.0, ResultFlag.SINGLE_BYTE_PATTERN, freq.popitem()[0]
@@ -48,7 +48,7 @@ class ChiSquare8:
             print('warn: the sector size seems to be too small to use with this calculation method.', file=stderr)
         self.random_limit = chi2.ppf(rand_lim, 255) * self.expected
         self.sus_random_limit = chi2.ppf(sus_rand_lim, 255) * self.expected
-    
+
     def calc(self, buf):
         counts = Counter(buf)
         if len(counts) == 1:
@@ -59,7 +59,7 @@ class ChiSquare8:
             return 0.0, ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH, None
         if chis <= self.random_limit:
             return 1.0, ResultFlag.RANDOM, None
-        return 0.5, ResultFlag.NOT_RANDOM, None 
+        return 0.5, ResultFlag.NOT_RANDOM, None
 
 
 class ChiSquare4:
@@ -97,7 +97,7 @@ class ChiSquare3:
             print('warn: the sector size seems to be too small to use with this calculation method.', file=stderr)
         self.random_limit = chi2.ppf(rand_lim, 2 ** self.N - 1) * self.expected
         self.sus_random_limit = chi2.ppf(sus_rand_lim, 2 ** self.N - 1) * self.expected
-    
+
     def calc(self, buf):
         vals = [0] * (2 ** self.N)
         rem = 0
@@ -130,7 +130,7 @@ class ChiSquare1:
             print('warn: the sector size seems to be too small to use with this calculation method.', file=stderr)
         self.random_limit = chi2.ppf(rand_lim, 1) * self.expected
         self.sus_random_limit = chi2.ppf(sus_rand_lim, 1) * self.expected
-    
+
     def calc(self, buf):
         set_bits = sum(map(int.bit_count, buf))
         if set_bits == 0:
@@ -150,7 +150,7 @@ class KSTest:
         self.p_rand_lim = 1 - rand_lim
         self.p_sus_rand_lim = 1 - sus_rand_lim
         self.dist = uniform(0, 255).cdf
-    
+
     def calc(self, buf):
         _, p = kstest(bytearray(buf), self.dist, mode='asymp')
         if p > self.p_sus_rand_lim:
@@ -158,7 +158,7 @@ class KSTest:
         if p < self.p_rand_lim:
             return 0.0, ResultFlag.NOT_RANDOM, None
         return 0.5, ResultFlag.RANDOM, None
-        
+
 
 analysis_methods = {
     'shannon': ShannonsEntropy,

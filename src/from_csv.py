@@ -7,6 +7,7 @@ from argument_parsing import add_output_method_arguments, check_invalid_output_m
 from analysis import ResultFlag
 import csv
 
+
 def parse_arguments():
     main_parser = argparse.ArgumentParser()
     main_parser.add_argument(
@@ -43,11 +44,12 @@ def set_to_header_end_position(f):
 
 def get_number_of_lines(f):
     p = f.tell()
+    line_number = 0
     for line_number, _ in enumerate(f):
         pass
     f.seek(p)
     return line_number + 1
-    
+
 
 def main(args, output_args):
     with args.file as f:
@@ -61,11 +63,11 @@ def main(args, output_args):
                     ResultFlag(int(row[3])),
                     None if row[4] == '' else int(row[4])
                 )
-                if not ret: # the pipe was closed
+                if not ret:  # the pipe was closed
                     exit(0)
 
 
 if __name__ == '__main__':
-    args, output_args = parse_arguments()
-    main(args, output_args)
+    arguments, output_arguments = parse_arguments()
+    main(arguments, output_arguments)
     exit(0)

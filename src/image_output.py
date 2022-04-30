@@ -24,37 +24,37 @@ def hex_color_type(x):
     if nx in colors:
         return colors[nx]
 
-    match = re.fullmatch(
-        r'#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})?', nx)
+    match = re.fullmatch(  # #000000/#00000000
+        r'#?([\da-f]{2})([\da-f]{2})([\da-f]{2})([\da-f]{2})?', nx)
     if match is not None:
         return tuple(int(b, base=16) for b in match.groups() if b is not None)
 
-    match = re.fullmatch(
-        r'#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})\[(0?\.[0-9]+|1\.0*|0\.)\]', nx)
+    match = re.fullmatch(  # #000000[1.0]
+        r'#?([\da-f]{2})([\da-f]{2})([\da-f]{2})\[(0?\.\d+|1\.0*|0\.)]', nx)
     if match is not None:
         return (
             *map(lambda b: int(b, base=16), match.group(1, 2, 3)),
             round(float(match.group(4)) * 255)
         )
 
-    match = re.fullmatch(
-        r'#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})\[(\d{1,2}|100)%?\]', nx)
+    match = re.fullmatch(  # #000000[100%]
+        r'#?([\da-f]{2})([\da-f]{2})([\da-f]{2})\[(\d{1,2}|100)%?]', nx)
     if match is not None:
         return (
             *map(lambda b: int(b, base=16), match.group(1, 2, 3)),
             round((255 * int(match.group(4))) / 100)
         )
 
-    match = re.fullmatch(
-        r'\[(0?\.[0-9]+|1\.0*|0\.)\]#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})', nx)
+    match = re.fullmatch(  # [1.0]#000000
+        r'\[(0?\.\d+|1\.0*|0\.)]#?([\da-f]{2})([\da-f]{2})([\da-f]{2})', nx)
     if match is not None:
         return (
             *map(lambda b: int(b, base=16), match.group(2, 3, 4)),
             round(float(match.group(1)) * 255)
         )
 
-    match = re.fullmatch(
-        r'\[(\d{1,2}|100)%?\]#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})', nx)
+    match = re.fullmatch(  # [100%]#000000
+        r'\[(\d{1,2}|100)%?]#?([\da-f]{2})([\da-f]{2})([\da-f]{2})', nx)
     if match is not None:
         return (
             *map(lambda b: int(b, base=16), match.group(2, 3, 4)),
@@ -76,7 +76,8 @@ def font_type(x):
     try:
         ImageFont.truetype(x)
     except OSError:
-        raise ArgumentTypeError(f'font {x} could not be found, please provide another font or use \'--font -\' for a fallback font')
+        raise ArgumentTypeError(
+            f'font {x} could not be found, please provide another font or use \'--font -\' for a fallback font')
     return x
 
 
@@ -88,7 +89,7 @@ def font_size_type(x):
 
 
 def luminance_test_black_white(bg_color):
-    '''Based on W3 guidelines: https://www.w3.org/TR/WCAG20/#relativeluminancedef'''
+    """Based on W3 guidelines: https://www.w3.org/TR/WCAG20/#relativeluminancedef"""
     srgb = [x / 255 for x in bg_color]
     rgb = [srgb[i] / 12.92 if srgb[i] <= 0.03928 else ((srgb[i] + 0.055) / 1.055) ** 2.4
            for i in range(3)]
@@ -127,6 +128,7 @@ class ImageOutput(OutputMethodBase):
                 max(vis_size[1], legend_size[1])
             )
         else:
+            fnt = None
             total_size = vis_size
 
         if self.font_color is Ellipsis:
@@ -169,7 +171,7 @@ class ImageOutput(OutputMethodBase):
         self._image.close()
         self.output_file.close()
         self.err_file.close()
-    
+
     def _get_legend_size(self, fnt):
         if len(self.palette.LEGEND) < 1:
             raise ValueError('Legend needs to have at least one element')
@@ -195,12 +197,11 @@ class ImageOutput(OutputMethodBase):
         for color, desc in self.palette.LEGEND:
             d.text((text_pos_w, text_pos_h), desc, font=fnt, fill=self.font_color)
             d.rectangle(((square_pos_w, text_pos_h),
-                        (square_pos_w + square_size, text_pos_h + square_size)),
+                         (square_pos_w + square_size, text_pos_h + square_size)),
                         fill=color,
                         outline=outline_color,
                         width=square_border_width)
             text_pos_h += square_size + spacing
-
 
 
 # sweeping-blocks
@@ -221,44 +222,44 @@ class SweepingBlocks(ImageOutput):
                                     ' could not be selected, defaulting to sweeping.', file=stderr)
 
     def _calc_widths(self):
-        preffered_block_size = max(16, 2 ** (int(sqrt(self._input_size)).bit_length() - 5))
+        preferred_block_size = max(16, 2 ** (int(sqrt(self._input_size)).bit_length() - 5))
 
         if self.width is not Ellipsis and self.sweeping_block_size is not Ellipsis:
             if self.width % self.sweeping_block_size != 0:
                 raise ValueError('width needs to be a multiple of sweeping-block-size')
             return self.width, self.sweeping_block_size
         if self.width is not Ellipsis and self.sweeping_block_size is Ellipsis:
-            for i in chain(range(preffered_block_size, ceil(sqrt(self.width)) + 1), 
-                           range(preffered_block_size - 1, 0, -1)):
-                # return the smallest divisor of width larger or equal to preffered block size
+            for i in chain(range(preferred_block_size, ceil(sqrt(self.width)) + 1),
+                           range(preferred_block_size - 1, 0, -1)):
+                # return the smallest divisor of width larger or equal to preferred block size
                 # but smaller or equal to the square root of width
                 # otherwise return the largest smaller divisor of width as sweeping block size
                 if self.width % i == 0:
                     return self.width, i
-        sbs = preffered_block_size if self.sweeping_block_size is Ellipsis else self.sweeping_block_size
+        sbs = preferred_block_size if self.sweeping_block_size is Ellipsis else self.sweeping_block_size
         return ceil(ceil(sqrt(self._input_size)) / sbs) * sbs, sbs
-        
 
     def _get_size(self):
         w, sbs = self._calc_widths()
-        if self._input_size % (w * sbs) < sbs ** 2:  # if a single unifinshed block remains on the last row
+        if self._input_size % (w * sbs) < sbs ** 2:  # if a single unfinished block remains on the last row
             return w, (self._input_size // (sbs * w)) * sbs + ceil((self._input_size % (sbs * w)) / sbs)
         return w, ceil(self._input_size / (sbs * w)) * sbs
 
     def _coords_from_pos(self, pos):
         return ((pos % self.sweeping_block_size +
-                (pos // self.sweeping_block_size ** 2) * self.sweeping_block_size) % self.width,
-               (pos // self.sweeping_block_size) % self.sweeping_block_size + pos //
-               (self.sweeping_block_size * self.width) * self.sweeping_block_size)
-    
+                 (pos // self.sweeping_block_size ** 2) * self.sweeping_block_size) % self.width,
+                (pos // self.sweeping_block_size) % self.sweeping_block_size + pos //
+                (self.sweeping_block_size * self.width) * self.sweeping_block_size)
+
     @staticmethod
     def check_args(**kwargs):
         if 'width' in kwargs and 'sweeping_block_size' in kwargs \
-             and kwargs['width'] is not Ellipsis \
-             and kwargs['sweeping_block_size'] is not Ellipsis \
-             and kwargs['width'] % kwargs['sweeping_block_size'] != 0:
+                and kwargs['width'] is not Ellipsis \
+                and kwargs['sweeping_block_size'] is not Ellipsis \
+                and kwargs['width'] % kwargs['sweeping_block_size'] != 0:
             return 'width needs to be a multiple of sweeping-block-size'
         return None
+
 
 # sweeping
 class Sweeping(SweepingBlocks):
@@ -299,11 +300,12 @@ class HilbertCurve(ImageOutput):
         p = self._d2xy(self.width, pos % self.width ** 2)
         return p[0], p[1] + (pos // self.width ** 2) * self.width
 
-    def _d2xy(self, n, d):
-        '''Calculates point on Hilbert curve from given distance
+    @staticmethod
+    def _d2xy(n, d):
+        """Calculates point on Hilbert curve from given distance
 
         code adapted from
-        https://en.wikipedia.org/wiki/Hilbert_curve#Applications_and_mapping_algorithms'''
+        https://en.wikipedia.org/wiki/Hilbert_curve#Applications_and_mapping_algorithms"""
 
         x = y = 0
         s = 1
