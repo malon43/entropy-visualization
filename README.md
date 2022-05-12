@@ -82,6 +82,4 @@ available methods are `sample-output`, `csv`, `sweeping`, `sweeping-blocks`, `hi
 
 ## TODO
 - More descriptive description
-- Usage
-- Better project structure
 - speed up entropy calculation
