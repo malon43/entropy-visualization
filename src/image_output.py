@@ -152,7 +152,7 @@ class ImageOutput(OutputMethodBase):
 
     def _coords_from_pos(self, pos):
         raise NotImplementedError(
-            f'Class {self.__class__.__name__} needs to implement the _from_pos() method'
+            f'Class {self.__class__.__name__} needs to implement the _coords_from_pos() method'
         )
 
     def _get_size(self):
