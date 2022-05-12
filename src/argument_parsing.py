@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 import argparse
 from output_methods import output_methods
 from analysis import analysis_methods

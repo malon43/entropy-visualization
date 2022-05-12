@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 from argparse import ArgumentTypeError, FileType
 from itertools import chain
 from sys import stderr, stdout

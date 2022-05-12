@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 
 from sys import exit
 from argument_parsing import parse_arguments

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 from argparse import ArgumentTypeError, FileType
 from enum import IntEnum
 from math import inf

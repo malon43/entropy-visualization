@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 
 import argparse
-
 from output_methods import output_methods
 from argument_parsing import add_output_method_arguments, check_invalid_output_method_args, output_method_type
 from analysis import ResultFlag

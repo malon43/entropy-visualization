@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 from image_output import HilbertCurve, SweepingBlocks, Sweeping
 from text_output import CSVOutput, SampleOutput
 

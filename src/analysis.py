@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+
 from enum import IntEnum
 from math import log2
 from collections import Counter
