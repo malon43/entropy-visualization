@@ -125,7 +125,7 @@ def parse_arguments():
     main_parser.add_argument(
         '-m', '--method',
         help=f'set the output method (available: {", ".join(output_methods.keys())})'
-             ' (default: {DEFAULT_OUTPUT_METHOD})',
+             f' (default: {DEFAULT_OUTPUT_METHOD})',
         type=output_method_type,
         default=DEFAULT_OUTPUT_METHOD,
         dest='output_method'
@@ -133,7 +133,7 @@ def parse_arguments():
     main_parser.add_argument(
         '-a', '--analysis',
         help=f'set the analysis method (available: {", ".join(analysis_methods.keys())})'
-             ' (default: {DEFAULT_ANALYSIS_METHOD})',
+             f' (default: {DEFAULT_ANALYSIS_METHOD})',
         type=analysis_method_type,
         default=DEFAULT_ANALYSIS_METHOD,
         dest='analysis_method'
@@ -141,7 +141,7 @@ def parse_arguments():
     main_parser.add_argument(
         '-l', '--significance-level',
         help=f'the significance level to use for classification (cannot be used with \'rand-lim\' and \'sus-rand-lim\')'
-             ' (default: {DEFAULT_SIGNIFICANCE_LEVEL})',
+             f' (default: {DEFAULT_SIGNIFICANCE_LEVEL})',
         type=significance_type,
         dest='sig_level'
     )
