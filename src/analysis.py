@@ -50,6 +50,7 @@ class ChiSquare8:
             print('warn: the sector size seems to be too small to use with this calculation method.', file=stderr)
         self.random_limit = chi2.ppf(rand_lim, 255) * self.expected
         self.sus_random_limit = chi2.ppf(sus_rand_lim, 255) * self.expected
+        self.max_chis = (sector_size - self.expected) ** 2 + 255 * self.expected ** 2
 
     def calc(self, buf):
         counts = Counter(buf)
@@ -57,11 +58,12 @@ class ChiSquare8:
             return 0.0, ResultFlag.SINGLE_BYTE_PATTERN, counts.popitem()[0]
 
         chis = sum((counts[i] - self.expected) ** 2 for i in range(256))
+        randomness = 1 - chis / self.max_chis
         if chis < self.sus_random_limit:
-            return 0.0, ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH, None
+            return randomness, ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH, None
         if chis <= self.random_limit:
-            return 1.0, ResultFlag.RANDOM, None
-        return 0.5, ResultFlag.NOT_RANDOM, None
+            return randomness, ResultFlag.RANDOM, None
+        return randomness, ResultFlag.NOT_RANDOM, None
 
 
 class ChiSquare4:
@@ -71,6 +73,7 @@ class ChiSquare4:
             print('warn: the sector size seems to be too small to use with this calculation method.', file=stderr)
         self.random_limit = chi2.ppf(rand_lim, 15) * self.expected
         self.sus_random_limit = chi2.ppf(sus_rand_lim, 15) * self.expected
+        self.max_chis = (sector_size - self.expected) ** 2 + 255 * self.expected ** 2
 
     def calc(self, buf):
         counts = Counter(buf)
@@ -82,11 +85,12 @@ class ChiSquare4:
             vals[byte & 15] += count
             vals[byte >> 4] += count
         chis = sum((i - self.expected) ** 2 for i in vals)
+        randomness = 1 - chis / self.max_chis
         if chis < self.sus_random_limit:
-            return 0.0, ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH, None
+            return randomness, ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH, None
         if chis <= self.random_limit:
-            return 1.0, ResultFlag.RANDOM, None
-        return 0.5, ResultFlag.NOT_RANDOM, None
+            return randomness, ResultFlag.RANDOM, None
+        return randomness, ResultFlag.NOT_RANDOM, None
 
 
 class ChiSquare3:
@@ -99,6 +103,7 @@ class ChiSquare3:
             print('warn: the sector size seems to be too small to use with this calculation method.', file=stderr)
         self.random_limit = chi2.ppf(rand_lim, 2 ** self.N - 1) * self.expected
         self.sus_random_limit = chi2.ppf(sus_rand_lim, 2 ** self.N - 1) * self.expected
+        self.max_chis = (sector_size - self.expected) ** 2 + 255 * self.expected ** 2
 
     def calc(self, buf):
         vals = [0] * (2 ** self.N)
@@ -117,11 +122,12 @@ class ChiSquare3:
         if vals[-1] == self.single_byte_pattern_count:
             return 0.0, ResultFlag.SINGLE_BYTE_PATTERN, 255
         chis = sum((i - self.expected) ** 2 for i in vals)
+        randomness = 1 - chis / self.max_chis
         if chis < self.sus_random_limit:
-            return 0.0, ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH, None
+            return randomness, ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH, None
         if chis <= self.random_limit:
-            return 1.0, ResultFlag.RANDOM, None
-        return 0.5, ResultFlag.NOT_RANDOM, None
+            return randomness, ResultFlag.RANDOM, None
+        return randomness, ResultFlag.NOT_RANDOM, None
 
 
 class ChiSquare1:
@@ -132,6 +138,7 @@ class ChiSquare1:
             print('warn: the sector size seems to be too small to use with this calculation method.', file=stderr)
         self.random_limit = chi2.ppf(rand_lim, 1) * self.expected
         self.sus_random_limit = chi2.ppf(sus_rand_lim, 1) * self.expected
+        self.max_chis = (sector_size - self.expected) ** 2 + 255 * self.expected ** 2
 
     def calc(self, buf):
         set_bits = sum(map(int.bit_count, buf))
@@ -140,11 +147,12 @@ class ChiSquare1:
         if set_bits == self.single_byte_pattern_count:
             return 0.0, ResultFlag.SINGLE_BYTE_PATTERN, 255
         chis = 2 * (set_bits - self.expected) ** 2
+        randomness = 1 - chis / self.max_chis
         if chis < self.sus_random_limit:
-            return 0.0, ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH, None
+            return randomness, ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH, None
         if chis <= self.random_limit:
-            return 1.0, ResultFlag.RANDOM, None
-        return 0.5, ResultFlag.NOT_RANDOM, None
+            return randomness, ResultFlag.RANDOM, None
+        return randomness, ResultFlag.NOT_RANDOM, None
 
 
 class KSTest:
@@ -158,8 +166,8 @@ class KSTest:
         if p > self.p_sus_rand_lim:
             return 0.0, ResultFlag.RANDOMNESS_SUSPICIOUSLY_HIGH, None
         if p < self.p_rand_lim:
-            return 0.0, ResultFlag.NOT_RANDOM, None
-        return 0.5, ResultFlag.RANDOM, None
+            return 0.5, ResultFlag.NOT_RANDOM, None
+        return 1.0, ResultFlag.RANDOM, None
 
 
 analysis_methods = {
