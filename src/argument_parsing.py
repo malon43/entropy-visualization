@@ -3,7 +3,7 @@
 import argparse
 from output_methods import output_methods
 from analysis import analysis_methods
-from re import sub
+from re import sub, MULTILINE
 
 DEFAULT_SECTOR_SIZE = 512
 DEFAULT_OUTPUT_METHOD = 'sweeping'
@@ -97,12 +97,10 @@ def get_methods_help():
         helps.append(
             f'  {method_name}:\n  ' +
             sub(
-                r'^options:\n*',
+                r'^options:\n*|^optional arguments:\n*|^usage: ?\n*',
                 '',
-                sub(r'^usage: \n*',
-                    '',
-                    parser.format_help()
-                    )
+                parser.format_help(),
+                flags=MULTILINE
             )
             .replace('\n', '\n  ')
         )
